@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 dirname = os.path.dirname(__file__)
 
-
+# takes url and downloads the pdf from PapaCambridge. year, month, and paper used to create directories/name files
 def scrap(url, year, month, paper):
     data = requests.get(url, stream=True)
     if data.status_code != 200:
@@ -39,8 +39,10 @@ def run():
             file = tag['href']
             thing = "{file}".format(file=file)[12::]
             print(thing)
+            # this regex finds the year, the month, and the paper name
             matches = re.findall("(?:Biology%20%289700%29/)([0-9].+?)%20(.+[A-z])/(.+).pdf", thing)
             if len(matches) == 0:
+                # this regex does the same but looks for a dash instead of a space because papacambridge sucks
                 matches = re.findall("(?:Biology%20%289700%29/)([0-9].+?)-(.+[A-z])/(.+).pdf", thing)
 
             if matches is not None and len(matches) != 0:
@@ -50,6 +52,7 @@ def run():
                 month = matches[1]
                 paper = matches[2]
                 print(domain+thing)
+                # takes year, month, and paper name and appends it to the base domain to get it from PapaCambridge
                 scrap("{domain}/{file}".format(domain=domain, file=thing), year, month, paper)
 
 
