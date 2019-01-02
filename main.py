@@ -10,7 +10,9 @@ tool = pyocr.get_available_tools()[0]
 lang = tool.get_available_languages()[0]
 final_text = []
 dirname = os.path.dirname(__file__)
-
+img = Image.open(dirname + "/img/img-01.jpg")
+height = img.height
+width = img.width
 
 def pdfToText(filePath):
     # image_jpeg is the list of all pdf pages as images
@@ -58,7 +60,11 @@ def pdfToText(filePath):
 
 def snip(pos, img, count):
     img_to_crop = Image.open(img)
-    img_to_crop.crop(pos).save("./img/question{}.jpg".format(count))
+    if count < 10:
+        thing = "0" + str(count)
+    else:
+        thing = str(count)
+    img_to_crop.crop(pos).save("./img/question{}.jpg".format(thing))
 
 
 def getFigures():
@@ -96,53 +102,76 @@ def getFigures():
         #     # print(line)
 
 
-def getMultipleChoiceQuestion():
+def getMultipleChoiceQuestions():
     with open("./img/text.txt", "r") as file:
         searchLines = file.readlines()
     lst = list()
     lineBeforeList = list()
-    for i, line in enumerate(searchLines):
+    endOfPage = False
+    oldLine = ""
+    for i in range(0, len(searchLines)):
+        line = searchLines[i]
         if line.startswith("page"):
             pageNumber = re.findall(" ([0-9].*) \|", line)[0]
             lineBeforeList.append(eval(re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", line)[0][1]))
             lineBeforeList.append(pageNumber)
+            lst.append("end")
+            endOfPage = True
             continue
         if "UCLES" in line:
             continue
+
         # finds the two coordinates in the line
         pos = re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", line)[0]
-        # these should always be correct/never fail
+        val = re.findall("^([0-9].*?)(?=\.| )", line)
+        # these should always be correct/never fail... except when they do ugh
         coord1 = eval(pos[0])
-        if 205 <= int(coord1[0]) <= 210:
+        coord2 = eval(pos[1])
+        if 205 <= int(coord1[0]) <= 210 and len(val) > 0 and type(eval(val[0])) is int:
             lst.append(pos)
-            pos = re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", oldLine)[0]
-            # print(type(eval(pos[1])))
-            lineBeforeList.append(eval(pos[1]))
+            if oldLine != "":
+                pos = re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", oldLine)[0]
+                print(eval(pos))
+                if not oldLine.startswith(" "):
+                    lineBeforeList.append((width,eval(pos[1]))[1])
+                elif not endOfPage:
+                    lineBeforeList.append(eval(pos[1]))
+                elif endOfPage:
+                    endOfPage = False
+                    # lst.append("end")
         oldLine = line
-    coord1 = eval(lst[0][0])
-    print(lineBeforeList)
     print(lst)
+    # coord1 = eval(lst[0][0])
+    print(lineBeforeList)
+    # print(lst)
     count = 1
-    for i in range(1, len(lst)):
-        endCoord = lineBeforeList[i]
-        if type(endCoord) == str:
+    counterNew = 0
+    lastCounterIPromise = 1
+    for i in range(0, len(lst)):
+        coord1 = lst[counterNew]
+        endCoord = lineBeforeList[counterNew]
+        counterNew += 1
+        if coord1 == 'end':
             print("page end reached = {}".format(endCoord))
             count += 1
+            # counterNew += 1
             continue
+        else:
+            coord1 = eval(coord1[0])
         print(endCoord)
         fullCoord = coord1 + endCoord
         print("fullcoord={}".format(fullCoord))
         if count < 10:
             newCount = "0" + str(count)
-        else:
+        elif count >= 10:
             newCount = str(count)
         imgName = dirname + "\img\img-{}.jpg".format(newCount)
         print(imgName)
-        snip(fullCoord, imgName, i)
-        coord1 = eval(lst[i][0])
+        snip(fullCoord, imgName, lastCounterIPromise)
+        lastCounterIPromise += 1
 
 
 # pdfToText(r"D:\Nithish\cambridgepaperparser\2018\May-June\9700_s18_qp_11.pdf")
 # getFigures()
-getMultipleChoiceQuestion()
-# snip((208, 1659, 2480, 3509),r"D:\Nithish\cambridgepaperparser\img\img-03.jpg",1)
+# getMultipleChoiceQuestions()
+snip((207, 1236, width, 1701),r"D:\Nithish\cambridgepaperparser\img\img-01.jpg",69)
