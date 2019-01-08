@@ -108,6 +108,7 @@ def getMultipleChoiceQuestions():
     lst = list()
     lineBeforeList = list()
     endOfPage = False
+    questionStart = False
     oldLine = ""
     for i in range(0, len(searchLines)):
         line = searchLines[i]
@@ -120,7 +121,6 @@ def getMultipleChoiceQuestions():
             continue
         if "UCLES" in line:
             continue
-
         # finds the two coordinates in the line
         pos = re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", line)[0]
         val = re.findall("^([0-9].*?)(?=\.| )", line)
@@ -128,10 +128,12 @@ def getMultipleChoiceQuestions():
         coord1 = eval(pos[0])
         coord2 = eval(pos[1])
         if 205 <= int(coord1[0]) <= 210 and len(val) > 0 and type(eval(val[0])) is int:
+            questionStart = True
             lst.append(pos)
             if oldLine != "":
                 pos = re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", oldLine)[0]
-                print(eval(pos))
+                # print(pos)
+                # print(eval(pos))
                 if not oldLine.startswith(" "):
                     lineBeforeList.append((width,eval(pos[1]))[1])
                 elif not endOfPage:
@@ -143,6 +145,7 @@ def getMultipleChoiceQuestions():
     print(lst)
     # coord1 = eval(lst[0][0])
     print(lineBeforeList)
+    lineBeforeList.pop(0)
     # print(lst)
     count = 1
     counterNew = 0
@@ -171,7 +174,7 @@ def getMultipleChoiceQuestions():
         lastCounterIPromise += 1
 
 
-# pdfToText(r"D:\Nithish\cambridgepaperparser\2018\May-June\9700_s18_qp_11.pdf")
+# pdfToText(dirname+r"\2018\May-June\9700_s18_qp_11.pdf")
 # getFigures()
-# getMultipleChoiceQuestions()
-snip((207, 1236, width, 1701),r"D:\Nithish\cambridgepaperparser\img\img-01.jpg",69)
+getMultipleChoiceQuestions()
+# snip((207, 1236, width, 1701),r"D:\Nithish\cambridgepaperparser\img\img-01.jpg",69)
