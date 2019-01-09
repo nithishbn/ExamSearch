@@ -111,6 +111,8 @@ def getMultipleChoiceQuestions():
     endOfPage = False
     questionStart = False
     oldLine = ""
+    greatestXValue = 0
+    coordHolder = ()
     for i in range(0, len(searchLines)):
         line = searchLines[i]
         if line.startswith("page"):
@@ -127,32 +129,33 @@ def getMultipleChoiceQuestions():
         val = re.findall("^([0-9].*?)(?=\.| )", line)
         # these should always be correct/never fail... except when they do ugh
         coord1 = eval(pos[0])
-        coord2 = eval(pos[1])
         if 205 <= int(coord1[0]) <= 210 and len(val) > 0 and type(eval(val[0])) is int:
-
+            if questionStart:
+                lst.append(coordHolder)
+                if oldLine != "":
+                    pos = re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", oldLine)[0]
+                    if endOfPage:
+                        endOfPage = False
+                    elif not endOfPage:
+                        lineBeforeList.append((greatestXValue, eval(pos[1])[1]))
+                greatestXValue = 0
             questionStart = True
-            lst.append(eval(pos[0]))
-            if oldLine != "":
-                pos = re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", oldLine)[0]
-                if not oldLine.startswith(" "):
-                    lineBeforeList.append((width, eval(pos[1]))[1])
-                elif not endOfPage:
-                    lineBeforeList.append(eval(pos[1]))
-                elif endOfPage:
-                    endOfPage = False
-        oldLine = line
+            coordHolder = coord1
+        if questionStart:
+            potentialXValue = eval(pos[1])[0]
+            # startCoord = eval(pos[0])
+            # coordHolder =
+            if potentialXValue > greatestXValue:
+                greatestXValue = potentialXValue
+            oldLine = line
     print(lst)
-    # coord1 = eval(lst[0][0])
-
-    lineBeforeList.pop(0)
     print(lineBeforeList)
-    # print(lst)
     count = 1
     counterNew = -1
     lastCounterIPromise = 1
     print(len(lst))
     print(len(lineBeforeList))
-    print(len(lineBeforeList)==len(lst))
+    print(len(lineBeforeList) == len(lst))
     for i in range(0, len(lst)):
         counterNew += 1
         coord1 = lst[i]
