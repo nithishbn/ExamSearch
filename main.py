@@ -14,6 +14,7 @@ img = Image.open(dirname + "/img/img-01.jpg")
 height = img.height
 width = img.width
 
+
 def pdfToText(filePath):
     # image_jpeg is the list of all pdf pages as images
     image_jpeg = convert_from_path(filePath, thread_count=4, dpi=300)
@@ -128,40 +129,42 @@ def getMultipleChoiceQuestions():
         coord1 = eval(pos[0])
         coord2 = eval(pos[1])
         if 205 <= int(coord1[0]) <= 210 and len(val) > 0 and type(eval(val[0])) is int:
+
             questionStart = True
-            lst.append(pos)
+            lst.append(eval(pos[0]))
             if oldLine != "":
                 pos = re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", oldLine)[0]
-                # print(pos)
-                # print(eval(pos))
                 if not oldLine.startswith(" "):
-                    lineBeforeList.append((width,eval(pos[1]))[1])
+                    lineBeforeList.append((width, eval(pos[1]))[1])
                 elif not endOfPage:
                     lineBeforeList.append(eval(pos[1]))
                 elif endOfPage:
                     endOfPage = False
-                    # lst.append("end")
         oldLine = line
     print(lst)
     # coord1 = eval(lst[0][0])
-    print(lineBeforeList)
+
     lineBeforeList.pop(0)
+    print(lineBeforeList)
     # print(lst)
     count = 1
-    counterNew = 0
+    counterNew = -1
     lastCounterIPromise = 1
+    print(len(lst))
+    print(len(lineBeforeList))
+    print(len(lineBeforeList)==len(lst))
     for i in range(0, len(lst)):
-        coord1 = lst[counterNew]
-        endCoord = lineBeforeList[counterNew]
         counterNew += 1
+        coord1 = lst[i]
+        endCoord = lineBeforeList[i]
         if coord1 == 'end':
             print("page end reached = {}".format(endCoord))
             count += 1
-            # counterNew += 1
+            # counterNew += 2
             continue
-        else:
-            coord1 = eval(coord1[0])
-        print(endCoord)
+        # print(type(coord1), coord1, type(endCoord), endCoord)
+        if type(endCoord) == str:
+            print("AHHHHH " + endCoord)
         fullCoord = coord1 + endCoord
         print("fullcoord={}".format(fullCoord))
         if count < 10:
