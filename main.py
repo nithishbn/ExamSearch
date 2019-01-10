@@ -116,7 +116,9 @@ def getMultipleChoiceQuestions():
     for i in range(0, len(searchLines)):
         line = searchLines[i]
         if line.startswith("page"):
+            # questionStart = False
             pageNumber = re.findall(" ([0-9].*) \|", line)[0]
+            print(pageNumber)
             lineBeforeList.append(eval(re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", line)[0][1]))
             lineBeforeList.append(pageNumber)
             lst.append("end")
@@ -145,9 +147,11 @@ def getMultipleChoiceQuestions():
             potentialXValue = eval(pos[1])[0]
             # startCoord = eval(pos[0])
             # coordHolder =
+
             if potentialXValue > greatestXValue:
                 greatestXValue = potentialXValue
             oldLine = line
+    lineBeforeList.pop(2)
     print(lst)
     print(lineBeforeList)
     count = 1
@@ -166,8 +170,8 @@ def getMultipleChoiceQuestions():
             # counterNew += 2
             continue
         # print(type(coord1), coord1, type(endCoord), endCoord)
-        if type(endCoord) == str:
-            print("AHHHHH " + endCoord)
+        # if type(endCoord) == str:
+
         fullCoord = coord1 + endCoord
         print("fullcoord={}".format(fullCoord))
         if count < 10:
@@ -183,4 +187,4 @@ def getMultipleChoiceQuestions():
 # pdfToText(dirname+r"\2018\May-June\9700_s18_qp_11.pdf")
 # getFigures()
 getMultipleChoiceQuestions()
-# snip((207, 1236, width, 1701),r"D:\Nithish\cambridgepaperparser\img\img-01.jpg",69)
+# snip((208, 1659, 1836,1920),dirname+r"\img\img-04.jpg",69)
