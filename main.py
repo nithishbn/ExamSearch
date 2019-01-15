@@ -10,25 +10,40 @@ tool = pyocr.get_available_tools()[0]
 lang = tool.get_available_languages()[0]
 final_text = []
 dirname = os.path.dirname(__file__)
-img = Image.open(dirname + "/img/img-01.jpg")
-height = img.height
-width = img.width
+
+
+# img = Image.open(dirname + "/img/img-01.jpg")
+# height = img.height
+# width = img.width
 
 
 def pdfToText(filePath):
     # image_jpeg is the list of all pdf pages as images
+    print(filePath)
     image_jpeg = convert_from_path(filePath, thread_count=4, dpi=300)
     length = len(image_jpeg)
+    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
+    year = matches[0]
+    month = matches[1]
+    paper = matches[2]
     # creates img dir if not exists.
     print(os.path.join(dirname, "img"))
-    if os.path.exists(os.path.join(dirname, "img")):
-        shutil.rmtree(os.path.join(dirname, "img"))
-    if not os.path.exists(os.path.join(dirname, "img")):
-        os.makedirs(os.path.join(dirname, "img"))
-    path = os.path.dirname(__file__) + "/img"
+
+    if os.path.exists(os.path.join(dirname, "img/{}/{}/{}".format(year,month,paper))):
+        shutil.rmtree(os.path.join(dirname, "img/{}/{}/{}".format(year,month,paper)))
+    if not os.path.exists(os.path.join(dirname, "img/{}/{}/{}".format(year,month,paper))):
+        os.makedirs(os.path.join(dirname, "img/{}/{}/{}".format(year,month,paper)))
+    path = os.path.dirname(__file__) + "/img/{}/{}/{}".format(year,month,paper)
 
     count = 1
     builder = pyocr.builders.LineBoxBuilder()
+    with open(path+"/text.txt","a") as wrt:
+        wrt.write(year)
+        wrt.write("\n")
+        wrt.write(month)
+        wrt.write("\n")
+        wrt.write(paper)
+        wrt.write("\n")
     # all pdf pages transcribed into one large text file for data use later
     with open(path + "/text.txt", "a") as wrt:
         for i in range(1, length - 1):  # length
@@ -59,14 +74,108 @@ def pdfToText(filePath):
     print("Text transcription found at {}".format(dirname + "/img/text.txt"))
 
 
-def snip(pos, img, count):
+def snip(pos, img, count,path):
+    year = path[0]
+    month = path[1]
+    paper = path[2]
     img_to_crop = Image.open(img)
     if count < 10:
         thing = "0" + str(count)
     else:
         thing = str(count)
-    img_to_crop.crop(pos).save("./img/question{}.jpg".format(thing))
+    img_to_crop.crop(pos).save("./img/{}/{}/{}/question{}.jpg".format(year,month,paper,thing))
 
+
+def getMultipleChoiceQuestions(filePath):
+    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
+    year = matches[0]
+    month = matches[1]
+    paper = matches[2]
+    with open("./img/{}/{}/{}/text.txt".format(year,month,paper), "r") as file:
+        searchLines = file.readlines()
+    lst = list()
+    lineBeforeList = list()
+    endOfPage = False
+    questionStart = False
+    oldLine = ""
+    greatestXValue = 0
+    coordHolder = ()
+    for i in range(3, len(searchLines)):
+        line = searchLines[i]
+        if line.startswith("page"):
+            questionStart = False
+            pageNumber = re.findall(" ([0-9].*) \|", line)[0]
+            print(pageNumber)
+            lineBeforeList.append(eval(re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", line)[0][1]))
+            lineBeforeList.append(pageNumber)
+            lst.append(coordHolder)
+            lst.append("end")
+            greatestXValue = 0
+            coordHolder = ()
+            endOfPage = True
+            continue
+        if "UCLES" in line:
+            continue
+        # finds the two coordinates in the line
+        pos = re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", line)[0]
+        val = re.findall("^([0-9].*?)(?=\.| )", line)
+        # these should always be correct/never fail... except when they do ugh
+        coord1 = eval(pos[0])
+        if 205 <= int(coord1[0]) <= 210 and len(val) > 0 and type(eval(val[0])) is int:
+            if questionStart:
+                lst.append(coordHolder)
+                if oldLine != "":
+                    pos = re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", oldLine)[0]
+                    if endOfPage:
+                        endOfPage = False
+                        lineBeforeList.append((greatestXValue, eval(pos[1])[1]))
+                    elif not endOfPage:
+                        lineBeforeList.append((greatestXValue, eval(pos[1])[1]))
+                greatestXValue = 0
+            questionStart = True
+            coordHolder = coord1
+        if questionStart:
+            potentialXValue = eval(pos[1])[0]
+            if potentialXValue > greatestXValue:
+                greatestXValue = potentialXValue
+            oldLine = line
+    # lineBeforeList.pop(2)
+    print(lst)
+    print(lineBeforeList)
+    count = 1
+    counterNew = -1
+    lastCounterIPromise = 1
+    print(len(lst))
+    print(len(lineBeforeList))
+    print(len(lineBeforeList) == len(lst))
+    path = dirname + "/img/{}/{}/{}".format(year,month,paper)
+    for i in range(0, len(lst)):
+        counterNew += 1
+        coord1 = lst[i]
+        endCoord = lineBeforeList[i]
+        if coord1 == 'end':
+            print("page end reached = {}".format(endCoord))
+            count += 1
+            # counterNew += 2
+            continue
+        fullCoord = coord1 + endCoord
+        print("fullcoord={}".format(fullCoord))
+        if count < 10:
+            newCount = "0" + str(count)
+        elif count >= 10:
+            newCount = str(count)
+        imgName = path+ "\img-{}.jpg".format(newCount)
+        print(imgName)
+        snip(fullCoord, imgName, lastCounterIPromise,[year,month,paper])
+        lastCounterIPromise += 1
+
+
+pdfToText(dirname + r"/2018/May-June/9700_s18_qp_11.pdf")
+# getFigures()
+getMultipleChoiceQuestions(dirname + r"/2018/May-June/9700_s18_qp_11.pdf")
+
+
+# snip((208, 1659, 1836,1920),dirname+r"\img\img-04.jpg",69)
 
 def getFigures():
     with open("./img/text.txt", "r") as file:
@@ -101,90 +210,3 @@ def getFigures():
         # else:
         #     str += line + "\n"
         #     # print(line)
-
-
-def getMultipleChoiceQuestions():
-    with open("./img/text.txt", "r") as file:
-        searchLines = file.readlines()
-    lst = list()
-    lineBeforeList = list()
-    endOfPage = False
-    questionStart = False
-    oldLine = ""
-    greatestXValue = 0
-    coordHolder = ()
-    for i in range(0, len(searchLines)):
-        line = searchLines[i]
-        if line.startswith("page"):
-            # questionStart = False
-            pageNumber = re.findall(" ([0-9].*) \|", line)[0]
-            print(pageNumber)
-            lineBeforeList.append(eval(re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", line)[0][1]))
-            lineBeforeList.append(pageNumber)
-            lst.append("end")
-            endOfPage = True
-            continue
-        if "UCLES" in line:
-            continue
-        # finds the two coordinates in the line
-        pos = re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", line)[0]
-        val = re.findall("^([0-9].*?)(?=\.| )", line)
-        # these should always be correct/never fail... except when they do ugh
-        coord1 = eval(pos[0])
-        if 205 <= int(coord1[0]) <= 210 and len(val) > 0 and type(eval(val[0])) is int:
-            if questionStart:
-                lst.append(coordHolder)
-                if oldLine != "":
-                    pos = re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", oldLine)[0]
-                    if endOfPage:
-                        endOfPage = False
-                    elif not endOfPage:
-                        lineBeforeList.append((greatestXValue, eval(pos[1])[1]))
-                greatestXValue = 0
-            questionStart = True
-            coordHolder = coord1
-        if questionStart:
-            potentialXValue = eval(pos[1])[0]
-            # startCoord = eval(pos[0])
-            # coordHolder =
-
-            if potentialXValue > greatestXValue:
-                greatestXValue = potentialXValue
-            oldLine = line
-    lineBeforeList.pop(2)
-    print(lst)
-    print(lineBeforeList)
-    count = 1
-    counterNew = -1
-    lastCounterIPromise = 1
-    print(len(lst))
-    print(len(lineBeforeList))
-    print(len(lineBeforeList) == len(lst))
-    for i in range(0, len(lst)):
-        counterNew += 1
-        coord1 = lst[i]
-        endCoord = lineBeforeList[i]
-        if coord1 == 'end':
-            print("page end reached = {}".format(endCoord))
-            count += 1
-            # counterNew += 2
-            continue
-        # print(type(coord1), coord1, type(endCoord), endCoord)
-        # if type(endCoord) == str:
-
-        fullCoord = coord1 + endCoord
-        print("fullcoord={}".format(fullCoord))
-        if count < 10:
-            newCount = "0" + str(count)
-        elif count >= 10:
-            newCount = str(count)
-        imgName = dirname + "\img\img-{}.jpg".format(newCount)
-        print(imgName)
-        snip(fullCoord, imgName, lastCounterIPromise)
-        lastCounterIPromise += 1
-
-
-# pdfToText(dirname+r"\2018\May-June\9700_s18_qp_11.pdf")
-# getFigures()
-getMultipleChoiceQuestions()
-# snip((208, 1659, 1836,1920),dirname+r"\img\img-04.jpg",69)
