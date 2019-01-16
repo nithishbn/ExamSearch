@@ -2,9 +2,13 @@ import codecs
 import os
 import re
 import shutil
+import sqlite3
+
+import nltk
 from PIL import Image
 from pdf2image import convert_from_path
 import pyocr.builders
+from nltk.corpus import stopwords
 
 tool = pyocr.get_available_tools()[0]
 lang = tool.get_available_languages()[0]
@@ -29,15 +33,15 @@ def pdfToText(filePath):
     # creates img dir if not exists.
     print(os.path.join(dirname, "img"))
 
-    if os.path.exists(os.path.join(dirname, "img/{}/{}/{}".format(year,month,paper))):
-        shutil.rmtree(os.path.join(dirname, "img/{}/{}/{}".format(year,month,paper)))
-    if not os.path.exists(os.path.join(dirname, "img/{}/{}/{}".format(year,month,paper))):
-        os.makedirs(os.path.join(dirname, "img/{}/{}/{}".format(year,month,paper)))
-    path = os.path.dirname(__file__) + "/img/{}/{}/{}".format(year,month,paper)
+    if os.path.exists(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper))):
+        shutil.rmtree(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper)))
+    if not os.path.exists(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper))):
+        os.makedirs(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper)))
+    path = os.path.dirname(__file__) + "/img/{}/{}/{}".format(year, month, paper)
 
     count = 1
     builder = pyocr.builders.LineBoxBuilder()
-    with open(path+"/text.txt","a") as wrt:
+    with open(path + "/text.txt", "a") as wrt:
         wrt.write(year)
         wrt.write("\n")
         wrt.write(month)
@@ -74,7 +78,7 @@ def pdfToText(filePath):
     print("Text transcription found at {}".format(dirname + "/img/text.txt"))
 
 
-def snip(pos, img, count,path):
+def snip(pos, img, count, path):
     year = path[0]
     month = path[1]
     paper = path[2]
@@ -83,7 +87,7 @@ def snip(pos, img, count,path):
         thing = "0" + str(count)
     else:
         thing = str(count)
-    img_to_crop.crop(pos).save("./img/{}/{}/{}/question{}.jpg".format(year,month,paper,thing))
+    img_to_crop.crop(pos).save("./img/{}/{}/{}/question{}.jpg".format(year, month, paper, thing))
 
 
 def getMultipleChoiceQuestions(filePath):
@@ -91,7 +95,7 @@ def getMultipleChoiceQuestions(filePath):
     year = matches[0]
     month = matches[1]
     paper = matches[2]
-    with open("./img/{}/{}/{}/text.txt".format(year,month,paper), "r") as file:
+    with open("./img/{}/{}/{}/text.txt".format(year, month, paper), "r") as file:
         searchLines = file.readlines()
     lst = list()
     lineBeforeList = list()
@@ -136,21 +140,20 @@ def getMultipleChoiceQuestions(filePath):
             coordHolder = coord1
         if questionStart:
             potentialXValue = eval(pos[1])[0]
-            if potentialXValue > greatestXValue:
-                greatestXValue = potentialXValue
+            if potentialXValue >= greatestXValue:
+                greatestXValue = coord1[0]
             oldLine = line
     # lineBeforeList.pop(2)
     print(lst)
     print(lineBeforeList)
     count = 1
-    counterNew = -1
+
     lastCounterIPromise = 1
     print(len(lst))
     print(len(lineBeforeList))
     print(len(lineBeforeList) == len(lst))
-    path = dirname + "/img/{}/{}/{}".format(year,month,paper)
+    path = dirname + "/img/{}/{}/{}".format(year, month, paper)
     for i in range(0, len(lst)):
-        counterNew += 1
         coord1 = lst[i]
         endCoord = lineBeforeList[i]
         if coord1 == 'end':
@@ -164,49 +167,121 @@ def getMultipleChoiceQuestions(filePath):
             newCount = "0" + str(count)
         elif count >= 10:
             newCount = str(count)
-        imgName = path+ "\img-{}.jpg".format(newCount)
+        imgName = path + "\img-{}.jpg".format(newCount)
         print(imgName)
-        snip(fullCoord, imgName, lastCounterIPromise,[year,month,paper])
+        snip(fullCoord, imgName, lastCounterIPromise, [year, month, paper])
         lastCounterIPromise += 1
 
 
-pdfToText(dirname + r"/2018/May-June/9700_s18_qp_11.pdf")
+def tagImage(filePath):
+    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
+    year = matches[0]
+    month = matches[1]
+    paper = matches[2]
+    path = dirname + "/img/{}/{}/{}".format(year, month, paper)
+    questionList = []
+    question = []
+    questionStart = False
+    with open(path + "/text.txt", "r") as file:
+        lines = file.readlines()
+        for i in range(3, len(lines)):
+            line = lines[i]
+            pos = re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", line)[0]
+            val = re.findall("^([0-9].*?)(?=\.| )", line)
+            lineVal = re.findall("^(.*)\|", line)[0]
+            # these should always be correct/never fail... except when they do ugh
+            coord1 = eval(pos[0])
+            if 205 <= int(coord1[0]) <= 210 and len(val) > 0 and type(eval(val[0])) is int:
+                if questionStart:
+                    questionList.append(question)
+                    question = []
+                questionStart = True
+                # question.append(line)
+            if questionStart:
+                question.append(lineVal)
+        # print(questionList)
+        # nullList = ["the", "and", "a", "an", ",", "for", "but", "yet", "to", "is", "what", "of","are"]
+        conn = sqlite3.connect("questions.sqlite")
+        cur = conn.cursor()
+
+        stops = set(stopwords.words("english"))
+        for q in questionList:
+            # print(q)
+            thing = "".join(q)
+            thing = thing.split()
+            newQ = [word.lower() for word in thing if word.lower() not in stops]
+            tags = [word.lower() for word in newQ if word.lower() not in [" ", ", "]]
+            questionNumber = tags.pop(0)
+            if "." in questionNumber:
+                questionNumber = questionNumber[:-1]
+            if int(questionNumber) < 10:
+                questionNumber = "0" + questionNumber
+
+            # print(questionNumber + " " + tags)
+            insertFilePath = filePath + "/question{}.jpg".format(questionNumber)
+            for tag in tags:
+                print(tag)
+                cur.execute("insert into tags (tag) VALUES (?)", (tag,))
+                cur.execute("insert into main (tag,filepath) values ((select id from tags where tags.tag=?),?) ",(tag,insertFilePath))
+                # print(tag)
+            # newQ = [word.lower() for word in q if word not in nullList]
+            # print(newQ)
+        cur.execute("select filepath from main join tags on main.tag = tags.id where tags.tag=?",("xylem",))
+        thing = cur.fetchall()
+        for stuff in thing:
+            print(stuff)
+        cur.close()
+        conn.commit()
+        conn.close()
+
+
+fileName = dirname + r"/2018/March/9700_m18_qp_12.pdf"
+
+
+# pdfToText(dirname + r"/2018/May-June/9700_s18_qp_11.pdf")
 # getFigures()
-getMultipleChoiceQuestions(dirname + r"/2018/May-June/9700_s18_qp_11.pdf")
-
-
-# snip((208, 1659, 1836,1920),dirname+r"\img\img-04.jpg",69)
-
-def getFigures():
-    with open("./img/text.txt", "r") as file:
-        searchlines = file.readlines()
-    str = ""
-    figNum = ""
-    figPos = []
-    for i, line in enumerate(searchlines):
-        # finds the two coordinates in the line
-        pos = re.findall("\|(.*) (.*)", line)
-        if len(pos) == 0:
-            print(">>>>>>>>>" + line)
-        else:
-            pos = pos[0]
-        if "Fig" in line and figNum != "":
-            check = re.findall("Fig\.(.*[0-9]\.[0-9].*?)", line)
-            # print(check)
-            if len(check) == 0:
-                continue
-            elif figNum == check[0]:
-                str += line
-                print(str)
-                str = ""
-                figNum = ""
-        elif figNum != "":
-            str += line
-        elif "Fig" in line and figNum == "":
-            figNum = re.findall("Fig\.(.*[0-9]\.[0-9].*?)", line)[0]
-            # print("asdf " + figNum)
-
-            str += line
-        # else:
-        #     str += line + "\n"
-        #     # print(line)
+# getMultipleChoiceQuestions(fileName)
+tagImage(fileName)
+def search():
+    query = input("Query: ")
+    conn = sqlite3.connect("questions.sqlite")
+    cur = conn.cursor()
+    cur.execute("select filepath from main where ? in tags")
+#
+#
+# # snip((208, 1659, 1836,1920),dirname+r"\img\img-04.jpg",69)
+#
+#
+# def getFigures():
+#     with open("./img/text.txt", "r") as file:
+#         searchlines = file.readlines()
+#     str = ""
+#     figNum = ""
+#     figPos = []
+#     for i, line in enumerate(searchlines):
+#         # finds the two coordinates in the line
+#         pos = re.findall("\|(.*) (.*)", line)
+#         if len(pos) == 0:
+#             print(">>>>>>>>>" + line)
+#         else:
+#             pos = pos[0]
+#         if "Fig" in line and figNum != "":
+#             check = re.findall("Fig\.(.*[0-9]\.[0-9].*?)", line)
+#             # print(check)
+#             if len(check) == 0:
+#                 continue
+#             elif figNum == check[0]:
+#                 str += line
+#                 print(str)
+#                 str = ""
+#                 figNum = ""
+#         elif figNum != "":
+#             str += line
+#         elif "Fig" in line and figNum == "":
+#             figNum = re.findall("Fig\.(.*[0-9]\.[0-9].*?)", line)[0]
+#             # print("asdf " + figNum)
+#
+#             str += line
+#         # else:
+#         #     str += line + "\n"
+#         #     # print(line)
