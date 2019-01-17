@@ -14,6 +14,7 @@ dirname = os.path.dirname(__file__)
 
 
 def pdfToText(filePath):
+    # comment
     # image_jpeg is the list of all pdf pages as images
     print(filePath)
     image_jpeg = convert_from_path(filePath, thread_count=4, dpi=300)

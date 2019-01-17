@@ -61,3 +61,8 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 ### Authors and acknowledgment
 Head Developer - Nithish Narasimman
+
+[![forthebadge](https://forthebadge.com/images/badges/made-with-python.svg)](https://forthebadge.com)
+
+[![forthebadge](https://forthebadge.com/images/badges/does-not-contain-msg.svg)](https://forthebadge.com)
+[![forthebadge](https://forthebadge.com/images/badges/does-not-contain-treenuts.svg)](https://forthebadge.com)
