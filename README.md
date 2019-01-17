@@ -6,7 +6,7 @@ Currently, ExamSearch only supports Biology 9700 Multiple Choice Papers, but sup
 
 ## Installation
 
-Clone the repo, and install the requirements listed below.
+Clone the repository, and install the requirements listed below.
 ### Requirements
 #### Tesseract-OCR
 Follow installation instructions [here](https://github.com/tesseract-ocr/tesseract/wiki#Installation).
