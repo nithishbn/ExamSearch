@@ -202,6 +202,15 @@ def getMultipleChoiceQuestions(filePath):
     # getMultipleChoiceAnswers(year, month, paper)
 
 
+def getFreeResponseQuestions(filePath):
+    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
+    year = matches[0]
+    month = matches[1]
+    paper = matches[2]
+    path = dirname + "/img/{}/{}/{}".format(year, month, paper)
+    with open(path+"/text.txt","r") as file:
+        pass
+
 # takes image files and pairs them to their respective text tags to make the images searchable
 def tagImage(filePath):
     matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
@@ -355,7 +364,7 @@ fileName = dirname + r"/2016/Jun/9700_s16_qp_12.pdf"
 # cur.close()
 # conn.commit()
 # conn.close()
-# pdfToText(fileName,False)
+pdfToText(fileName)
 # getMultipleChoiceQuestions(fileName)
 # tagImage(fileName)
 # getMultipleChoiceAnswers("2018","Oct-Nov","9700_w18_qp_13")
