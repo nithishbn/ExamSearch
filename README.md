@@ -9,7 +9,7 @@ Currently, ExamSearch only supports Biology 9700 Multiple Choice Papers, but sup
 Clone the repository, and install the requirements listed below.
 ### Requirements
 #### Python 3
-Well, this is a Python project, so I guess it's expected. Make sure you get Python 3!
+Well, this is a Python project, so I guess it's expected for you have to Python. Make sure you get Python 3!
 #### Tesseract-OCR
 Follow installation instructions [here](https://github.com/tesseract-ocr/tesseract/wiki#Installation).
 This is the main OCR tool used.
@@ -58,11 +58,23 @@ You only need to run this once before you run `main.py`.
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
+## Road Map
+Currently, Exam Search is able to parse a majority of Biology 9700 Multiple Choice papers.
+### Planned features
+* Expand Exam Search to all Biology 9700 papers
+* Expand Exam Search to other subjects like A Level History
+* Pull up the mark scheme alongside the question
+* Index the Biology textbook and pull up relevant paragraphs from the text to be used to answer the question
+    * This feature is the end goal for Exam Search at least for Biology 9700
+* Work on UI/Create a good-looking application
+
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
 
 ### Authors and acknowledgment
 Head Developer - Nithish Narasimman
+
+Assistant Developer - Eric Marnadi
 
 [![forthebadge](https://forthebadge.com/images/badges/made-with-python.svg)](https://forthebadge.com)
 
