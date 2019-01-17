@@ -8,6 +8,8 @@ Currently, ExamSearch only supports Biology 9700 Multiple Choice Papers, but sup
 
 Clone the repository, and install the requirements listed below.
 ### Requirements
+#### Python 3
+Well, this is a Python project, so I guess it's expected. Make sure you get Python 3!
 #### Tesseract-OCR
 Follow installation instructions [here](https://github.com/tesseract-ocr/tesseract/wiki#Installation).
 This is the main OCR tool used.
