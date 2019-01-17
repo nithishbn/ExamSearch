@@ -182,6 +182,15 @@ def getMultipleChoiceQuestions(filePath):
         lastCounterIPromise += 1
 
 
+def getFreeResponseQuestions(filePath):
+    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
+    year = matches[0]
+    month = matches[1]
+    paper = matches[2]
+    path = dirname + "/img/{}/{}/{}".format(year, month, paper)
+    with open(path+"/text.txt","r") as file:
+        pass
+
 # takes image files and pairs them to their respective text tags to make the images searchable
 def tagImage(filePath):
     matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
@@ -284,16 +293,16 @@ def search():
             # jk it's the right lever get hekt
 
 
-fileName = dirname + r"/2015/Nov/9700_w15_qp_11.pdf"
+fileName = dirname + r"/2018/May-June/9700_s18_qp_41.pdf"
 # conn = sqlite3.connect("questions.sqlite")
 # cur = conn.cursor()
 # cur.close()
 # conn.commit()
 # conn.close()
-# pdfToText(fileName)
+pdfToText(fileName)
 # getMultipleChoiceQuestions(fileName)
 # tagImage(fileName)
-search()
+# search()
 
 # for i in range(1,4):
 #     num = str(i)
