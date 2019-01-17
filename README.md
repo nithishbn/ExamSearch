@@ -68,12 +68,8 @@ Currently, Exam Search is able to parse a majority of Biology 9700 Multiple Choi
     * This feature is the end goal for Exam Search at least for Biology 9700
 * Work on UI/Create a good-looking application
 
-## License
-[MIT](https://choosealicense.com/licenses/mit/)
-
 ### Authors and acknowledgment
-Head Developer - Nithish Narasimman
-
+Head Developer - Nithish Narasimman<br>
 Assistant Developer - Eric Marnadi
 
 [![forthebadge](https://forthebadge.com/images/badges/made-with-python.svg)](https://forthebadge.com)

@@ -276,7 +276,7 @@ def search():
     else:
         for val in results:
             imgPath = val[0]
-            print(imgPath)
+            print(r"{}".format(imgPath))
             # PULL THE LEVER, KRONK
             img = Image.open(imgPath)
             img.show()
@@ -284,7 +284,7 @@ def search():
             # jk it's the right lever get hekt
 
 
-fileName = dirname + r"/2016/Jun/9700_s16_qp_1{num}.pdf"
+fileName = dirname + r"/2015/Nov/9700_w15_qp_11.pdf"
 # conn = sqlite3.connect("questions.sqlite")
 # cur = conn.cursor()
 # cur.close()
