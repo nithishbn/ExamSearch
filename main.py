@@ -208,9 +208,51 @@ def getFreeResponseQuestions(filePath):
     month = matches[1]
     paper = matches[2]
     path = dirname + "/img/{}/{}/{}".format(year, month, paper)
+    questionStart = False
+    questionStartCoords = []
+    questionEndCoords = []
+    oldLine = ""
+    endOfPage = False
+    greatestXValue = 2480
     with open(path+"/text.txt","r") as file:
-        pass
+        lines = file.readlines()
 
+        for i in range(3,len(lines)):
+            line = lines[i]
+            # finds the two coordinates in the line
+            pos = re.findall("\| (\([0-9].*\)) (.*[0-9]\))", line)[0]
+            # questionNumber
+            questionNumber = re.findall("^([0-9].*?)(?=\.| )", line)
+            # these should always be correct/never fail... except when they do ugh
+            coord1 = eval(pos[0])
+            if "page end" in line:
+                print(line)
+                endOfPage = True
+                # continue
+            if "[Total:" in line:
+                print(line)
+                questionStart = False
+                questionEndCoords.append((greatestXValue,eval(pos[1])[1]))
+                continue
+            # checks if the line is the question start line
+            if 205 <= int(coord1[0]) <= 210 and len(questionNumber) > 0 and type(eval(questionNumber[0])) is int:
+                # is a question being parsed currently and have you stumbled upon the next question?
+                # if so, put the last line in and assume this as the start of the next question
+                print(line)
+                if questionStart:
+                    questionStartCoords.append(coordHolder)
+                    if oldLine != "":
+                        pos = re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", oldLine)[0]
+                        if endOfPage:
+                            endOfPage = False
+                            print(line)
+                            questionEndCoords.append((greatestXValue, eval(pos[1])[1]))
+                questionStart = True
+                coordHolder = coord1
+            # make the oldLine the line value for the endOfQuestionCoords list
+            oldLine = line
+    print(questionStartCoords)
+    print(questionEndCoords)
 # takes image files and pairs them to their respective text tags to make the images searchable
 def tagImage(filePath):
     matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
@@ -364,8 +406,10 @@ fileName = dirname + r"/2016/Jun/9700_s16_qp_12.pdf"
 # cur.close()
 # conn.commit()
 # conn.close()
-pdfToText(fileName)
+# pdfToText(fileName)
 # getMultipleChoiceQuestions(fileName)
+getFreeResponseQuestions(fileName)
+
 # tagImage(fileName)
 # getMultipleChoiceAnswers("2018","Oct-Nov","9700_w18_qp_13")
 search()
