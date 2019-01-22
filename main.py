@@ -238,8 +238,9 @@ def tagImage(filePath):
                 # insert new tags into the tags table
                 cur.execute("insert into tags (tag) VALUES (?) ", (tag,))
                 # insert filepath and tag id into main table
-                cur.execute("insert into main (tag,filepath) values ((select id from tags where tags.tag=?),?) ",
-                            (tag, insertFilePath))
+                cur.execute(
+                    "INSERT OR REPLACE INTO main (tag,filepath, year, month, paper) values ((select id from tags where tags.tag=?),?,?,?,?) ",
+                    (tag, insertFilePath, year, month, paper))
         cur.close()
         conn.commit()
         conn.close()
@@ -247,44 +248,69 @@ def tagImage(filePath):
 
 # search! :D
 def search():
-    query = input("Query: ")
-    # multiple tags :)
-    query = query.split()
-    # database connection
-    conn = sqlite3.connect("questions.sqlite")
-    cur = conn.cursor()
-    results = []
-    # goes through each word in the query and finds which filePath entry has that tag using cool sql
-    for word in query:
-        cur.execute("select filepath from main join tags on main.tag = tags.id where tags.tag=?", (word,))
-        res = cur.fetchall()
-        results.append(res)
-    # ooh what's this you ask?
-    # this intersection thing basically removes duplicate file paths in case multiple tags exist in the same question
-    # so if the question had the entries xylem AND transpiration— which is highly likely— then it won't open the same question twice
-    # which is nice
-    if len(query) > 1:
-        for i in range(0, len(results) - 1, 2):
-            results = list(set(results[i]).intersection(results[i + 1]))
-    # only one query? just remove the duplicates and dont do weird intersections
-    else:
-        results = set(results[0])
-    # you suck at searching/you haven't indexed enough of the MC papers to get a good result
-    if len(results) == 0:
-        print("No results found!")
-    # yay go you! you searched well, my young padawan
-    else:
-        for val in results:
-            imgPath = val[0]
-            print(r"{}".format(imgPath))
-            # PULL THE LEVER, KRONK
-            img = Image.open(imgPath)
-            img.show()
-            # WRONG LEVAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-            # jk it's the right lever get hekt
+    query = ""
+    while True:
+        query = input("Query: ")
+        if query == "quit":
+            break
+        # multiple tags :)
+        query = query.split()
+        # database connection
+        conn = sqlite3.connect("questions.sqlite")
+        cur = conn.cursor()
+        results = []
+        # goes through each word in the query and finds which filePath entry has that tag using cool sql
+        for word in query:
+            cur.execute("select filepath from main join tags on main.tag = tags.id where tags.tag=?", (word,))
+            res = cur.fetchall()
+            results.append(res)
+        # ooh what's this you ask?
+        # this intersection thing basically removes duplicate file paths in case multiple tags exist in the same question
+        # so if the question had the entries xylem AND transpiration, which is highly likely, then it won't open the same question twice
+        # which is nice
+        if len(query) > 1:
+            for i in range(0, len(results) - 1, 2):
+                results = list(set(results[i]).intersection(results[i + 1]))
+        # only one query? just remove the duplicates and dont do weird intersections
+        else:
+            results = set(results[0])
+        # you suck at searching/you haven't indexed enough of the MC papers to get a good result
+        if len(results) == 0:
+            print("No results found!")
+        # yay go you! you searched well, my young padawan
+        else:
+            for val in results:
+                imgPath = val[0]
+                print(r"{}".format(imgPath))
+                # PULL THE LEVER, KRONK
+                img = Image.open(imgPath)
+                img.show()
+                # print(val)
+                cur.execute("select year, month, paper from main where main.main.filepath=?", (imgPath,))
+                stuff = cur.fetchall()
+                print(stuff)
+                paperInfo = list(set(stuff))[0]
+                print(paperInfo)
+                year = paperInfo[0]
+                month = paperInfo[1]
+                paper = paperInfo[2]
+                markScheme = ""
+                for i, letter in enumerate(paper):
+                    if letter =="q" and paper[i+1] == "p":
+                        markScheme+="m"
+                    elif letter == "p" and paper[i-1] == "q":
+                        markScheme+="s"
+                    else:
+                        markScheme+=letter
+                os.startfile(dirname+"/{}/{}/{}.pdf".format(year,month,markScheme))
+                # WRONG LEVAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+                # jk it's the right lever get hekt
+                inp = input("next: ")
+                if inp == "quit":
+                    break
 
 
-fileName = dirname + r"/2015/Nov/9700_w15_qp_11.pdf"
+fileName = dirname + r"/2018/May-June/9700_s18_qp_13.pdf"
 # conn = sqlite3.connect("questions.sqlite")
 # cur = conn.cursor()
 # cur.close()
@@ -293,6 +319,7 @@ fileName = dirname + r"/2015/Nov/9700_w15_qp_11.pdf"
 # pdfToText(fileName)
 # getMultipleChoiceQuestions(fileName)
 # tagImage(fileName)
+
 search()
 
 # for i in range(1,4):
