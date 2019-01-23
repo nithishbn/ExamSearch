@@ -67,6 +67,7 @@ Currently, Exam Search is able to parse a majority of Biology 9700 Multiple Choi
 * Index the Biology textbook and pull up relevant paragraphs from the text to be used to answer the question
     * This feature is the end goal for Exam Search at least for Biology 9700
 * Work on UI/Create a good-looking application
+For further details, visit this page for the [complete roadmap](https://app.gitkraken.com/glo/board/XEfNTzlDSQAP5w8i).
 
 ### Authors and acknowledgment
 Head Developer - Nithish Narasimman<br>
