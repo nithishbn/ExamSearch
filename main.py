@@ -9,14 +9,17 @@ import pyocr.builders
 from nltk.corpus import stopwords
 
 tool = pyocr.get_available_tools()[0]
+# print(tool)
 lang = tool.get_available_languages()[0]
 dirname = os.path.dirname(__file__)
+print(dirname)
 
-
-def pdfToText(filePath):
+def pdfToText(filePath,isMarkScheme):
     # comment
     # image_jpeg is the list of all pdf pages as images
     print(filePath)
+    # if isMarkScheme:
+    #     filePath
     image_jpeg = convert_from_path(filePath, thread_count=4, dpi=300)
     length = len(image_jpeg)
     matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
@@ -24,18 +27,31 @@ def pdfToText(filePath):
     year = matches[0]
     month = matches[1]
     paper = matches[2]
-    # creates img dir if not exists.
-    print(os.path.join(dirname, "img"))
-    if os.path.exists(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper))):
-        shutil.rmtree(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper)))
-    if not os.path.exists(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper))):
-        os.makedirs(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper)))
-    path = os.path.dirname(__file__) + "/img/{}/{}/{}".format(year, month, paper)
+    if not isMarkScheme:
+        # creates img dir if not exists.
+        print(os.path.join(dirname, "img"))
+        if os.path.exists(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper))):
+            shutil.rmtree(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper)))
+        if not os.path.exists(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper))):
+            os.makedirs(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper)))
+        path = os.path.dirname(__file__) + "/img/{}/{}/{}".format(year, month, paper)
+        length -= 1
+    else:
 
+        paperNew = ""
+        for i, letter in enumerate(paper):
+            if letter == "m" and paper[i + 1] == "s":
+                paperNew += "q"
+            elif letter == "s" and paper[i - 1] == "m":
+                paperNew += "p"
+            else:
+                paperNew += letter
+        print(paperNew)
+        path = os.path.dirname(__file__) + "/img/{}/{}/{}/ms".format(year, month, paperNew)
     count = 1
     builder = pyocr.builders.LineBoxBuilder()
     # writes basic info to be accessed later
-    with open(path + "/text.txt", "a") as wrt:
+    with open(path + "/text.txt", "w") as wrt:
         wrt.write(year)
         wrt.write("\n")
         wrt.write(month)
@@ -44,7 +60,7 @@ def pdfToText(filePath):
         wrt.write("\n")
     # all pdf pages transcribed into one large text file for data use later
     with open(path + "/text.txt", "a") as wrt:
-        for i in range(1, length - 1):  # length
+        for i in range(1, length):  # length
             img = image_jpeg[i]
             if count < 10:
                 file = "{}/img-0{}.jpg".format(path, count)
@@ -72,7 +88,7 @@ def pdfToText(filePath):
             wrt.write("page end {} | (0,0) ({x2},{y2})\n".format(pageCount, x2=img.width, y2=img.height))
             print("Page {} transcribed".format(pageCount))
             count += 1
-    print("Text transcription found at {}".format(dirname + "/img/text.txt"))
+    print("Text transcription found at {}".format(path+"/text.txt"))
 
 
 # does the snippy snippy for the question images
@@ -180,7 +196,7 @@ def getMultipleChoiceQuestions(filePath):
         # snippy snippy
         snip(fullCoord, imgName, lastCounterIPromise, [year, month, paper])
         lastCounterIPromise += 1
-
+    getMultipleChoiceAnswers(year,month,paper)
 
 # takes image files and pairs them to their respective text tags to make the images searchable
 def tagImage(filePath):
@@ -232,15 +248,16 @@ def tagImage(filePath):
                 questionNumber = "0" + questionNumber
 
             # smart filePath
-            insertFilePath = path + "/question{}.jpg".format(questionNumber)
+            insertFilePath = "/img/{}/{}/{}/question{}.jpg".format(year, month, paper, questionNumber)
+            answer = "/img/{}/{}/{}/question{}-ms.jpg".format(year, month, paper, questionNumber)
             # row insertion
             for tag in tags:
                 # insert new tags into the tags table
                 cur.execute("insert into tags (tag) VALUES (?) ", (tag,))
                 # insert filepath and tag id into main table
                 cur.execute(
-                    "INSERT OR REPLACE INTO main (tag,filepath, year, month, paper) values ((select id from tags where tags.tag=?),?,?,?,?) ",
-                    (tag, insertFilePath, year, month, paper))
+                    "INSERT OR REPLACE INTO main (tag,filepath, year, month, paper, answer) values ((select id from tags where tags.tag=?),?,?,?,?,?) ",
+                    (tag, insertFilePath, year, month, paper,answer))
         cur.close()
         conn.commit()
         conn.close()
@@ -283,7 +300,7 @@ def search():
                 imgPath = val[0]
                 print(r"{}".format(imgPath))
                 # PULL THE LEVER, KRONK
-                img = Image.open(imgPath)
+                img = Image.open(dirname + imgPath)
                 img.show()
                 # print(val)
                 cur.execute("select year, month, paper from main where main.main.filepath=?", (imgPath,))
@@ -294,15 +311,7 @@ def search():
                 year = paperInfo[0]
                 month = paperInfo[1]
                 paper = paperInfo[2]
-                markScheme = ""
-                for i, letter in enumerate(paper):
-                    if letter =="q" and paper[i+1] == "p":
-                        markScheme+="m"
-                    elif letter == "p" and paper[i-1] == "q":
-                        markScheme+="s"
-                    else:
-                        markScheme+=letter
-                os.startfile(dirname+"/{}/{}/{}.pdf".format(year,month,markScheme))
+
                 # WRONG LEVAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
                 # jk it's the right lever get hekt
                 inp = input("next: ")
@@ -310,25 +319,56 @@ def search():
                     break
 
 
-fileName = dirname + r"/2018/May-June/9700_s18_qp_13.pdf"
+def getMultipleChoiceAnswers(year, month, paper):
+    dirname = os.path.dirname(__file__)
+    paperDir = paper.format("qp")
+    path = "/img/{}/{}/{}".format(year, month, paperDir)
+    paper = paper.format("ms")
+    markSchemePath = path+"/ms"
+    # print(markSchemePath)
+    fullPath = dirname+markSchemePath
+    print(fullPath)
+
+    if os.path.exists(fullPath):
+        shutil.rmtree(fullPath)
+    os.makedirs(fullPath)
+    print("this will take a while because the mark scheme has not been parsed and indexed yet")
+    markScheme = ""
+    for i, letter in enumerate(paper):
+        if letter == "q" and paper[i + 1] == "p":
+            markScheme += "m"
+        elif letter == "p" and paper[i - 1] == "q":
+            markScheme += "s"
+        else:
+            markScheme += letter
+    pdfToText(dirname + "/{}/{}/{}.pdf".format(year, month, markScheme),True)
+    print("Mark Scheme indexed!")
+
+
+fileName = dirname + r"/2018/Oct-Nov/9700_w18_qp_13.pdf"
 # conn = sqlite3.connect("questions.sqlite")
 # cur = conn.cursor()
 # cur.close()
 # conn.commit()
 # conn.close()
-# pdfToText(fileName)
+# pdfToText(fileName,False)
 # getMultipleChoiceQuestions(fileName)
 # tagImage(fileName)
-
-search()
+# getMultipleChoiceAnswers("2018","Oct-Nov","9700_w18_qp_13")
+# search()
 
 # for i in range(1,4):
 #     num = str(i)
 #     fileName = dirname + r"/2016/Jun/9700_s16_qp_1{num}.pdf".format(num=num)
 #
 #     print(fileName)
-# pdfToText(fileName)
-# getMultipleChoiceQuestions(fileName)
-# tagImage(fileName)
+#     pdfToText(fileName)
+#     getMultipleChoiceQuestions(fileName)
+#     tagImage(fileName)
+# #
 #
-#
+# pos = (319,871, 319+300,871+100)
+# img_to_crop = Image.open(r"C:\Users\narasimmanr\Documents\Nithish\examsearch\img\2018\Oct-Nov\9700_w18_qp_13\ms\img-01.jpg")
+# img_to_crop.crop(pos).save("./heh.jpg")
+# newImg = Image.open("./heh.jpg")
+# newImg.show()
