@@ -8,13 +8,16 @@ from pdf2image import convert_from_path
 import pyocr.builders
 from nltk.corpus import stopwords
 
+# import nltk
+# nltk.download("stopwords")
 tool = pyocr.get_available_tools()[0]
 # print(tool)
 lang = tool.get_available_languages()[0]
 dirname = os.path.dirname(__file__)
 print(dirname)
 
-def pdfToText(filePath,isMarkScheme):
+
+def pdfToText(filePath, isMarkScheme):
     # comment
     # image_jpeg is the list of all pdf pages as images
     print(filePath)
@@ -88,7 +91,7 @@ def pdfToText(filePath,isMarkScheme):
             wrt.write("page end {} | (0,0) ({x2},{y2})\n".format(pageCount, x2=img.width, y2=img.height))
             print("Page {} transcribed".format(pageCount))
             count += 1
-    print("Text transcription found at {}".format(path+"/text.txt"))
+    print("Text transcription found at {}".format(path + "/text.txt"))
 
 
 # does the snippy snippy for the question images
@@ -196,7 +199,8 @@ def getMultipleChoiceQuestions(filePath):
         # snippy snippy
         snip(fullCoord, imgName, lastCounterIPromise, [year, month, paper])
         lastCounterIPromise += 1
-    getMultipleChoiceAnswers(year,month,paper)
+    # getMultipleChoiceAnswers(year, month, paper)
+
 
 # takes image files and pairs them to their respective text tags to make the images searchable
 def tagImage(filePath):
@@ -257,7 +261,7 @@ def tagImage(filePath):
                 # insert filepath and tag id into main table
                 cur.execute(
                     "INSERT OR REPLACE INTO main (tag,filepath, year, month, paper, answer) values ((select id from tags where tags.tag=?),?,?,?,?,?) ",
-                    (tag, insertFilePath, year, month, paper,answer))
+                    (tag, insertFilePath, year, month, paper, answer))
         cur.close()
         conn.commit()
         conn.close()
@@ -324,9 +328,9 @@ def getMultipleChoiceAnswers(year, month, paper):
     paperDir = paper.format("qp")
     path = "/img/{}/{}/{}".format(year, month, paperDir)
     paper = paper.format("ms")
-    markSchemePath = path+"/ms"
+    markSchemePath = path + "/ms"
     # print(markSchemePath)
-    fullPath = dirname+markSchemePath
+    fullPath = dirname + markSchemePath
     print(fullPath)
 
     if os.path.exists(fullPath):
@@ -341,11 +345,11 @@ def getMultipleChoiceAnswers(year, month, paper):
             markScheme += "s"
         else:
             markScheme += letter
-    pdfToText(dirname + "/{}/{}/{}.pdf".format(year, month, markScheme),True)
+    pdfToText(dirname + "/{}/{}/{}.pdf".format(year, month, markScheme), True)
     print("Mark Scheme indexed!")
 
 
-fileName = dirname + r"/2018/Oct-Nov/9700_w18_qp_13.pdf"
+fileName = dirname + r"/2016/Jun/9700_s16_qp_12.pdf"
 # conn = sqlite3.connect("questions.sqlite")
 # cur = conn.cursor()
 # cur.close()
@@ -355,20 +359,42 @@ fileName = dirname + r"/2018/Oct-Nov/9700_w18_qp_13.pdf"
 # getMultipleChoiceQuestions(fileName)
 # tagImage(fileName)
 # getMultipleChoiceAnswers("2018","Oct-Nov","9700_w18_qp_13")
-# search()
+search()
+# for root, dirs, files in os.walk(u"."):
+#     path = root.split(os.sep)
+#     # print((len(path) - 1) * '---', os.path.basename(root))
+#     for file in files:
+#         if "qp_1" in file:
+#             print(path)
+#             # print(len(path) * '---', file)
+#             # fileName = dirname + path[1]+"/" + file
+#             fileName = "{}/{}/{}/{}".format(dirname, path[1], path[2], file)
+#             pdfToText(fileName, False)
+#             getMultipleChoiceQuestions(fileName)
+#             tagImage(fileName)
 
-# for i in range(1,4):
-#     num = str(i)
-#     fileName = dirname + r"/2016/Jun/9700_s16_qp_1{num}.pdf".format(num=num)
-#
-#     print(fileName)
-#     pdfToText(fileName)
-#     getMultipleChoiceQuestions(fileName)
-#     tagImage(fileName)
-# #
-#
-# pos = (319,871, 319+300,871+100)
-# img_to_crop = Image.open(r"C:\Users\narasimmanr\Documents\Nithish\examsearch\img\2018\Oct-Nov\9700_w18_qp_13\ms\img-01.jpg")
-# img_to_crop.crop(pos).save("./heh.jpg")
-# newImg = Image.open("./heh.jpg")
-# newImg.show()
+def index(yearStart,num):
+    directory = dirname + "/"
+    intYearStart = int(yearStart)
+    # for root, dirs, files in os.walk(u"."):
+    #     path = root.split(os.sep)
+    #     # print((len(path) - 1) * '---', os.path.basename(root))
+    for i in range(num):
+        for subRoot, subDirs, subFiles in os.walk(directory+yearStart):
+            newpath = subRoot.split(os.sep)
+            # print(newpath)
+            for file in subFiles:
+                if "qp_1" in file:
+                    print(newpath[0]+"/"+newpath[1]+"/"+file)
+        yearStart = str(intYearStart + 1)
+        print(yearStart)
+        # for file in files:
+        #     if "qp_1" in file:
+        #         print(path)
+        #         # print(len(path) * '---', file)
+        #         # fileName = dirname + path[1]+"/" + file
+        #         fileName = "{}/{}/{}/{}".format(dirname, path[1], path[2], file)
+        #         pdfToText(fileName, False)
+        #         getMultipleChoiceQuestions(fileName)
+        #         tagImage(fileName)
+# index("2002",10)
