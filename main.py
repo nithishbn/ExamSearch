@@ -25,7 +25,7 @@ def pdfToText(filePath, isMarkScheme):
     #     filePath
     image_jpeg = convert_from_path(filePath, thread_count=4, dpi=300)
     length = len(image_jpeg)
-    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
+    matches = re.findall("([0-9].+?)\\\(.+[A-z])\\\(.+).pdf", filePath)[0]
     # basic information about file
     year = matches[0]
     month = matches[1]
@@ -39,8 +39,8 @@ def pdfToText(filePath, isMarkScheme):
             os.makedirs(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper)))
         path = os.path.dirname(__file__) + "/img/{}/{}/{}".format(year, month, paper)
         length -= 1
+        print("dirs created")
     else:
-
         paperNew = ""
         for i, letter in enumerate(paper):
             if letter == "m" and paper[i + 1] == "s":
@@ -99,16 +99,18 @@ def snip(pos, img, count, path):
     year = path[0]
     month = path[1]
     paper = path[2]
-    img_to_crop = Image.open(img)
-    if count < 10:
-        thing = "0" + str(count)
-    else:
-        thing = str(count)
-    # if you're bad at life
-    if len(pos) != 4:
-        print(pos)
-    else:
-        img_to_crop.crop(pos).save("./img/{}/{}/{}/question{}.jpg".format(year, month, paper, thing))
+    with Image.open(img) as img_to_crop:
+        if count < 10:
+            thing = "0" + str(count)
+        else:
+            thing = str(count)
+        if pos[3] >= pos[1]:
+            # if you're bad at life
+            if len(pos) != 4:
+                print(pos)
+            else:
+                img_to_crop.crop(pos).save("./img/{}/{}/{}/question{}.jpg".format(year, month, paper, thing))
+                return 1
 
 
 # gets multiple choice questions
@@ -203,7 +205,7 @@ def getMultipleChoiceQuestions(filePath):
 
 
 def getFreeResponseQuestions(filePath):
-    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
+    matches = re.findall("([0-9].+?)\\\(.+[A-z])\\\(.+).pdf", filePath)[0]
     year = matches[0]
     month = matches[1]
     paper = matches[2]
@@ -214,10 +216,9 @@ def getFreeResponseQuestions(filePath):
     oldLine = ""
     endOfPage = False
     greatestXValue = 2480
-    with open(path+"/text.txt","r") as file:
+    with open(path + "/text.txt", "r") as file:
         lines = file.readlines()
-
-        for i in range(3,len(lines)):
+        for i in range(3, len(lines)):
             line = lines[i]
             # finds the two coordinates in the line
             pos = re.findall("\| (\([0-9].*\)) (.*[0-9]\))", line)[0]
@@ -225,6 +226,7 @@ def getFreeResponseQuestions(filePath):
             questionNumber = re.findall("^([0-9].*?)(?=\.| )", line)
             # these should always be correct/never fail... except when they do ugh
             coord1 = eval(pos[0])
+
             if "page end" in line:
                 print(line)
                 endOfPage = True
@@ -232,7 +234,8 @@ def getFreeResponseQuestions(filePath):
             if "[Total:" in line:
                 print(line)
                 questionStart = False
-                questionEndCoords.append((greatestXValue,eval(pos[1])[1]))
+                questionStartCoords.append(coordHolder)
+                questionEndCoords.append((greatestXValue, eval(pos[1])[1]))
                 continue
             # checks if the line is the question start line
             if 205 <= int(coord1[0]) <= 210 and len(questionNumber) > 0 and type(eval(questionNumber[0])) is int:
@@ -253,9 +256,42 @@ def getFreeResponseQuestions(filePath):
             oldLine = line
     print(questionStartCoords)
     print(questionEndCoords)
+    print("hi")
+    count = 1
+    # great counter title
+    lastCounterIPromise = 1
+    path = dirname + "/img/{}/{}/{}".format(year, month, paper)
+    # image snippy snippy
+    for i in range(0, len(questionStartCoords)):
+        # grab set of start and end coords
+        coord1 = questionStartCoords[i]
+        endCoord = questionEndCoords[i]
+        # reached end of page
+        if coord1 == 'end':
+            print("page end reached = {}".format(endCoord))
+            count += 1
+            continue
+        # this is how the snip tool takes the coordinates
+        fullCoord = coord1 + endCoord
+        print("fullcoord={}".format(fullCoord))
+        if count < 10:
+            newCount = "0" + str(count)
+        elif count >= 10:
+            newCount = str(count)
+        imgName = path + "\img-{}.jpg".format(newCount)
+        print(imgName)
+        # snippy snippy
+        res = snip(fullCoord, imgName, lastCounterIPromise, [year, month, paper])
+        if res == 1:
+            print("all good")
+        else:
+            print("skipping this one")
+        lastCounterIPromise += 1
+
+
 # takes image files and pairs them to their respective text tags to make the images searchable
 def tagImage(filePath):
-    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
+    matches = re.findall("([0-9].+?)\\\(.+[A-z])\\\(.+).pdf", filePath)[0]
     year = matches[0]
     month = matches[1]
     paper = matches[2]
@@ -340,9 +376,11 @@ def search():
         # this intersection thing basically removes duplicate file paths in case multiple tags exist in the same question
         # so if the question had the entries xylem AND transpiration, which is highly likely, then it won't open the same question twice
         # which is nice
+        print(results)
         if len(query) > 1:
             for i in range(0, len(results) - 1, 2):
                 results = list(set(results[i]).intersection(results[i + 1]))
+            print(results)
         # only one query? just remove the duplicates and dont do weird intersections
         else:
             results = set(results[0])
@@ -356,7 +394,7 @@ def search():
                 print(r"{}".format(imgPath))
                 # PULL THE LEVER, KRONK
                 img = Image.open(dirname + imgPath)
-                img.show()
+                # img.show()
                 # print(val)
                 cur.execute("select year, month, paper from main where main.main.filepath=?", (imgPath,))
                 stuff = cur.fetchall()
@@ -400,19 +438,36 @@ def getMultipleChoiceAnswers(year, month, paper):
     print("Mark Scheme indexed!")
 
 
-fileName = dirname + r"/2016/Jun/9700_s16_qp_12.pdf"
+fileName = dirname + r"/2017/Mar/9700_m17_qp_42.pdf"
 # conn = sqlite3.connect("questions.sqlite")
 # cur = conn.cursor()
 # cur.close()
 # conn.commit()
 # conn.close()
-# pdfToText(fileName)
+# pdfToText(fileName,False)
 # getMultipleChoiceQuestions(fileName)
-getFreeResponseQuestions(fileName)
+# getFreeResponseQuestions(fileName)
 
 # tagImage(fileName)
 # getMultipleChoiceAnswers("2018","Oct-Nov","9700_w18_qp_13")
 search()
+yes = False
+# for dirpath, _, filenames in os.walk(u"."):
+#     for f in filenames:
+#         pdfPath = os.path.abspath(os.path.join(dirpath, f))
+#         if "2017" in pdfPath:
+#             yes = True
+#         if "qp_4" in f and yes:
+#             print("start")
+#             print("__________________________________________________")
+#
+#             pdfToText(pdfPath, False)
+#             getFreeResponseQuestions(pdfPath)
+#             tagImage(pdfPath)
+#             print("__________________________________________________")
+#             print("end")
+
+
 # for root, dirs, files in os.walk(u"."):
 #     path = root.split(os.sep)
 #     # print((len(path) - 1) * '---', os.path.basename(root))
@@ -426,19 +481,19 @@ search()
 #             getMultipleChoiceQuestions(fileName)
 #             tagImage(fileName)
 
-def index(yearStart,num):
+def index(yearStart, num):
     directory = dirname + "/"
     intYearStart = int(yearStart)
     # for root, dirs, files in os.walk(u"."):
     #     path = root.split(os.sep)
     #     # print((len(path) - 1) * '---', os.path.basename(root))
     for i in range(num):
-        for subRoot, subDirs, subFiles in os.walk(directory+yearStart):
+        for subRoot, subDirs, subFiles in os.walk(directory + yearStart):
             newpath = subRoot.split(os.sep)
             # print(newpath)
             for file in subFiles:
                 if "qp_1" in file:
-                    print(newpath[0]+"/"+newpath[1]+"/"+file)
+                    print(newpath[0] + "/" + newpath[1] + "/" + file)
         yearStart = str(intYearStart + 1)
         print(yearStart)
         # for file in files:
