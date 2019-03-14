@@ -21,8 +21,7 @@ def pdfToText(filePath, isMarkScheme):
     # comment
     # image_jpeg is the list of all pdf pages as images
     print(filePath)
-    # if isMarkScheme:
-    #     filePath
+
     image_jpeg = convert_from_path(filePath, thread_count=4, dpi=300)
     length = len(image_jpeg)
     matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
@@ -104,6 +103,7 @@ def snip(pos, img, count, path):
             thing = "0" + str(count)
         else:
             thing = str(count)
+        print(pos)
         if pos[3] >= pos[1]:
             # if you're bad at life
             if len(pos) != 4:
@@ -115,7 +115,8 @@ def snip(pos, img, count, path):
 
 # gets multiple choice questions
 def getMultipleChoiceQuestions(filePath):
-    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
+    print(filePath)
+    matches = re.findall("([0-9].+?)\\\(.+[A-z])\\\(.+).pdf", filePath)[0]
     # basic info again
     year = matches[0]
     month = matches[1]
@@ -131,7 +132,7 @@ def getMultipleChoiceQuestions(filePath):
     oldLine = ""
     # decided to cave in and just use the maximum margin because calculating the greatest x value was such a pain
     greatestXValue = 2480
-    coordHolder = ()
+    coordHolder = (0,0)
     # starts from 3rd line to skip over basic info
     for i in range(3, len(searchLines)):
         line = searchLines[i]
@@ -144,13 +145,12 @@ def getMultipleChoiceQuestions(filePath):
             questionEndCoords.append(pageNumber)
             questionStartCoords.append(coordHolder)
             questionStartCoords.append("end")
-            coordHolder = ()
+
             endOfPage = True
             continue
         # this was just being annoying
         if "UCLES" in line:
             continue
-
         # finds the two coordinates in the line
         pos = re.findall("\| (\([0-9].*\)) (.*[0-9]\))", line)[0]
         # questionNumber
@@ -226,7 +226,6 @@ def getFreeResponseQuestions(filePath):
             questionNumber = re.findall("^([0-9].*?)(?=\.| )", line)
             # these should always be correct/never fail... except when they do ugh
             coord1 = eval(pos[0])
-
             if "page end" in line:
                 print(line)
                 endOfPage = True
@@ -381,6 +380,8 @@ def search():
         # this intersection thing basically removes duplicate file paths in case multiple tags exist in the same question
         # so if the question had the entries xylem AND transpiration, which is highly likely, then it won't open the same question twice
         # which is nice
+        # print(results)
+        # results = results[0]
         print(results)
         # results = results[0]
         thing = []
@@ -468,27 +469,15 @@ fileName = dirname + r"/2017/Nov/9700_w17_qp_21.pdf"
 # conn.commit()
 # conn.close()
 # pdfToText(fileName,False)
+print("hi")
 # getMultipleChoiceQuestions(fileName)
 # getFreeResponseQuestions(fileName)
 
 # tagImage(fileName)
 # getMultipleChoiceAnswers("2018","Oct-Nov","9700_w18_qp_13")
 search()
-yes = False
-# for dirpath, _, filenames in os.walk(u"."):
-#     for f in filenames:
-#         pdfPath = os.path.abspath(os.path.join(dirpath, f))
-#         if "2017" in pdfPath:
-#             yes = True
-#         if "qp_4" in f and yes:
-#             print("start")
-#             print("__________________________________________________")
-#
-#             pdfToText(pdfPath, False)
-#             getFreeResponseQuestions(pdfPath)
-#             tagImage(pdfPath)
-#             print("__________________________________________________")
-#             print("end")
+# yes = False
+# errors = []
 
 
 # for root, dirs, files in os.walk(u"."):
