@@ -25,7 +25,7 @@ def pdfToText(filePath, isMarkScheme):
     #     filePath
     image_jpeg = convert_from_path(filePath, thread_count=4, dpi=300)
     length = len(image_jpeg)
-    matches = re.findall("([0-9].+?)\\\(.+[A-z])\\\(.+).pdf", filePath)[0]
+    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
     # basic information about file
     year = matches[0]
     month = matches[1]
@@ -205,7 +205,7 @@ def getMultipleChoiceQuestions(filePath):
 
 
 def getFreeResponseQuestions(filePath):
-    matches = re.findall("([0-9].+?)\\\(.+[A-z])\\\(.+).pdf", filePath)[0]
+    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
     year = matches[0]
     month = matches[1]
     paper = matches[2]
@@ -291,7 +291,7 @@ def getFreeResponseQuestions(filePath):
 
 # takes image files and pairs them to their respective text tags to make the images searchable
 def tagImage(filePath):
-    matches = re.findall("([0-9].+?)\\\(.+[A-z])\\\(.+).pdf", filePath)[0]
+    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
     year = matches[0]
     month = matches[1]
     paper = matches[2]
@@ -356,6 +356,8 @@ def tagImage(filePath):
 
 # search! :D
 def search():
+    dirname = os.path.dirname(os.path.abspath(__file__))
+    print(dirname)
     query = ""
     while True:
         query = input("Query: ")
@@ -371,40 +373,61 @@ def search():
         for word in query:
             cur.execute("select filepath from main join tags on main.tag = tags.id where tags.tag=?", (word,))
             res = cur.fetchall()
-            results.append(res)
+
+            for val in res:
+                results.append(val[0])
+
         # ooh what's this you ask?
         # this intersection thing basically removes duplicate file paths in case multiple tags exist in the same question
         # so if the question had the entries xylem AND transpiration, which is highly likely, then it won't open the same question twice
         # which is nice
         print(results)
+        # results = results[0]
+        thing = []
         if len(query) > 1:
-            for i in range(0, len(results) - 1, 2):
-                results = list(set(results[i]).intersection(results[i + 1]))
-            print(results)
+            for val in results:
+                print(results.count(val)>1)
+                if val not in thing and results.count(val)>=1:
+                    thing.append(val)
+            print(thing)
+            results = thing
+            # for i in range(0, len(results) - 1, 2):
+            #     print(results[i])
+            #     results = list(set(results[i]).intersection(results[i + 1]))
+            # print(results)
         # only one query? just remove the duplicates and dont do weird intersections
         else:
-            results = set(results[0])
+            results = set(results)
+            print(results)
         # you suck at searching/you haven't indexed enough of the MC papers to get a good result
         if len(results) == 0:
             print("No results found!")
         # yay go you! you searched well, my young padawan
         else:
-            for val in results:
-                imgPath = val[0]
+            for imgPath in results:
+                # imgPath = val
                 print(r"{}".format(imgPath))
                 # PULL THE LEVER, KRONK
-                img = Image.open(dirname + imgPath)
-                # img.show()
+                try:
+                    img = Image.open(dirname + imgPath)
+                except:
+                    print("lol")
+                    continue
                 # print(val)
                 cur.execute("select year, month, paper from main where main.main.filepath=?", (imgPath,))
                 stuff = cur.fetchall()
-                print(stuff)
+                # print(stuff)
                 paperInfo = list(set(stuff))[0]
-                print(paperInfo)
+                # print(paperInfo)
                 year = paperInfo[0]
                 month = paperInfo[1]
                 paper = paperInfo[2]
-
+                if ("qp_2" or "qp_4") in imgPath:
+                    print("{}/{}/{}/{}.pdf".format(dirname,year,month,paper))
+                else:
+                    img.show()
+                markScheme = paper.replace("qp","ms")
+                print("{}/{}/{}/{}.pdf".format(dirname,year,month,markScheme))
                 # WRONG LEVAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
                 # jk it's the right lever get hekt
                 inp = input("next: ")
@@ -438,7 +461,7 @@ def getMultipleChoiceAnswers(year, month, paper):
     print("Mark Scheme indexed!")
 
 
-fileName = dirname + r"/2017/Mar/9700_m17_qp_42.pdf"
+fileName = dirname + r"/2017/Nov/9700_w17_qp_21.pdf"
 # conn = sqlite3.connect("questions.sqlite")
 # cur = conn.cursor()
 # cur.close()
@@ -506,3 +529,6 @@ def index(yearStart, num):
         #         getMultipleChoiceQuestions(fileName)
         #         tagImage(fileName)
 # index("2002",10)
+# if __name__ == "__main__":
+#
+#     search()
