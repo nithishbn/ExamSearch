@@ -189,6 +189,7 @@ def getMultipleChoiceQuestions(filePath):
             print("page end reached = {}".format(endCoord))
             count += 1
             continue
+        #this is another comment
         # this is how the snip tool takes the coordinates
         fullCoord = coord1 + endCoord
         print("fullcoord={}".format(fullCoord))
