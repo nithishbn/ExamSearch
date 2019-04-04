@@ -1,9 +1,7 @@
 import os
 import re
 import sqlite3
-
-from PIL import Image
-from flask import Flask, request, jsonify, send_file, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
 
 dirname = os.path.dirname(__file__)
 

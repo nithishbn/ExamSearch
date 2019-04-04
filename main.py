@@ -374,11 +374,14 @@ def search():
         for val in content:
             print(val)
             img = requests.post(server + "getImage", {"imgPath": val})
-            print(img.status_code)
+
             if img.status_code==200:
                 print(type(img.content))
                 imgToShow = Image.open(io.BytesIO(img.content))
                 imgToShow.show()
+            else:
+                print(img.status_code)
+                print("Image not available")
             input("wait: ")
         if query == "quit":
             break
