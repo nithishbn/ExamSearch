@@ -22,7 +22,7 @@ def scrap(url, year, month, paper):
             file.write(data.content)
 
 
-def run():
+def runScrap():
     baseUrl = "https://pastpapers.papacambridge.com/?dir=Cambridge%20International%20Examinations%20%28CIE%29%2FAS%20and%20A%20Level%2FBiology%20%289700%29"
     domain = "https://pastpapers.papacambridge.com"
     directory = requests.get(baseUrl)
