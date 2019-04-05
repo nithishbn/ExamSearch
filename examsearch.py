@@ -17,21 +17,25 @@ def search():
         r = requests.post(server, {"query": query})
         # print(r.status_code)
         print(r.content)
-        content = ast.literal_eval(bytes.decode(r.content))
-        print(list(content))
-        for val in content:
-            print(val)
-            img = requests.post(server + "getImage", {"imgPath": val})
-            if img.status_code == 200:
-                print(type(img.content))
-                imgToShow = Image.open(io.BytesIO(img.content))
-                imgToShow.show()
-            else:
-                print(img.status_code)
-                print("Image not available")
-            q = input("wait: ")
-            if q == "quit":
-                break
+        content = dict(ast.literal_eval(bytes.decode(r.content)))
+        print(content)
+        if content['error'] == -1:
+            print("Error!")
+        else:
+            for val in content['data']:
+                print(val)
+                img = requests.post(server + "getImage", {"imgPath": val})
+                if img.status_code == 200:
+                    print(type(img.content))
+                    imgToShow = Image.open(io.BytesIO(img.content))
+                    imgToShow.show()
+                else:
+                    print(img.status_code)
+                    print("Image not available")
+                q = input("wait: ")
+                if q == "quit":
+                    break
+    input()
 
 
 
