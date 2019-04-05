@@ -26,77 +26,78 @@ def pdfToText(filePath, isMarkScheme):
     # comment
     # image_jpeg is the list of all pdf pages as images
     print(filePath)
-    with convert_from_path(filePath, thread_count=4, dpi=300) as image_jpeg:
+    print("%r", open)
+    image_jpeg = convert_from_path(filePath,thread_count=4,dpi=300)
 
-        length = len(image_jpeg)
-        matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
-        # basic information about file
-        year = matches[0]
-        month = matches[1]
-        paper = matches[2]
-        if not isMarkScheme:
-            # creates img dir if not exists.
-            print(os.path.join(dirname, "img"))
-            if os.path.exists(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper))):
-                shutil.rmtree(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper)))
-            if not os.path.exists(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper))):
-                os.makedirs(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper)))
-            path = os.path.dirname(__file__) + "/img/{}/{}/{}".format(year, month, paper)
-            length -= 1
-            print("dirs created")
-        else:
-            paperNew = ""
-            for i, letter in enumerate(paper):
-                if letter == "m" and paper[i + 1] == "s":
-                    paperNew += "q"
-                elif letter == "s" and paper[i - 1] == "m":
-                    paperNew += "p"
-                else:
-                    paperNew += letter
-            print(paperNew)
-            path = os.path.dirname(__file__) + "/img/{}/{}/{}/ms".format(year, month, paperNew)
-        count = 1
-        builder = pyocr.builders.LineBoxBuilder()
-        # writes basic info to be accessed later
-        with open(path + "/text.txt", "w") as wrt:
-            wrt.write(year)
-            wrt.write("\n")
-            wrt.write(month)
-            wrt.write("\n")
-            wrt.write(paper)
-            wrt.write("\n")
-        # all pdf pages transcribed into one large text file for data use later
-        with open(path + "/text.txt", "a") as wrt:
-            for i in range(1, length):  # length
-                img = image_jpeg[i]
-                if count < 10:
-                    file = "{}/img-0{}.jpg".format(path, count)
-                else:
-                    file = "{}/img-{}.jpg".format(path, count)
-                print(file)
-                img.save(file, 'jpeg')
-                txt = tool.image_to_string(
-                    Image.open(file),
-                    lang=lang,
-                    builder=builder
-                )
-                # where the magic happens for OCR
-                for line in txt:
-                    wrt.write(
-                        "{content} | ({x1},{y1}) ({x2},{y2})\n".format(content=line.content, x1=line.position[0][0],
-                                                                       y1=line.position[0][1], x2=line.position[1][0],
-                                                                       y2=line.position[1][1]))
-                    print(line.content)
-                img = Image.open(file)
-                if count < 10:
-                    pageCount = "0" + str(count)
-                else:
-                    pageCount = count
-                # end of page so it's easier to parse questions later
-                wrt.write("page end {} | (0,0) ({x2},{y2})\n".format(pageCount, x2=img.width, y2=img.height))
-                print("Page {} transcribed".format(pageCount))
-                count += 1
-        print("Text transcription found at {}".format(path + "/text.txt"))
+    length = len(image_jpeg)
+    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
+    # basic information about file
+    year = matches[0]
+    month = matches[1]
+    paper = matches[2]
+    if not isMarkScheme:
+        # creates img dir if not exists.
+        print(os.path.join(dirname, "img"))
+        if os.path.exists(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper))):
+            shutil.rmtree(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper)))
+        if not os.path.exists(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper))):
+            os.makedirs(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper)))
+        path = os.path.dirname(__file__) + "/img/{}/{}/{}".format(year, month, paper)
+        length -= 1
+        print("dirs created")
+    else:
+        paperNew = ""
+        for i, letter in enumerate(paper):
+            if letter == "m" and paper[i + 1] == "s":
+                paperNew += "q"
+            elif letter == "s" and paper[i - 1] == "m":
+                paperNew += "p"
+            else:
+                paperNew += letter
+        print(paperNew)
+        path = os.path.dirname(__file__) + "/img/{}/{}/{}/ms".format(year, month, paperNew)
+    count = 1
+    builder = pyocr.builders.LineBoxBuilder()
+    # writes basic info to be accessed later
+    with open(path + "/text.txt", "w") as wrt:
+        wrt.write(year)
+        wrt.write("\n")
+        wrt.write(month)
+        wrt.write("\n")
+        wrt.write(paper)
+        wrt.write("\n")
+    # all pdf pages transcribed into one large text file for data use later
+    with open(path + "/text.txt", "a") as wrt:
+        for i in range(1, length):  # length
+            img = image_jpeg[i]
+            if count < 10:
+                file = "{}/img-0{}.jpg".format(path, count)
+            else:
+                file = "{}/img-{}.jpg".format(path, count)
+            print(file)
+            img.save(file, 'jpeg')
+            txt = tool.image_to_string(
+                Image.open(file),
+                lang=lang,
+                builder=builder
+            )
+            # where the magic happens for OCR
+            for line in txt:
+                wrt.write(
+                    "{content} | ({x1},{y1}) ({x2},{y2})\n".format(content=line.content, x1=line.position[0][0],
+                                                                   y1=line.position[0][1], x2=line.position[1][0],
+                                                                   y2=line.position[1][1]))
+                print(line.content)
+            img = Image.open(file)
+            if count < 10:
+                pageCount = "0" + str(count)
+            else:
+                pageCount = count
+            # end of page so it's easier to parse questions later
+            wrt.write("page end {} | (0,0) ({x2},{y2})\n".format(pageCount, x2=img.width, y2=img.height))
+            print("Page {} transcribed".format(pageCount))
+            count += 1
+    print("Text transcription found at {}".format(path + "/text.txt"))
 
 
 # does the snippy snippy for the question images
@@ -121,7 +122,7 @@ def snip(pos, img, count, path):
 # gets multiple choice questions
 def getMultipleChoiceQuestions(filePath):
     print(filePath)
-    matches = re.findall("([0-9].+?)\\\(.+[A-z])\\\(.+).pdf", filePath)[0]
+    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
     # basic info again
     year = matches[0]
     month = matches[1]
@@ -361,7 +362,6 @@ def tagImage(filePath):
 # search! :D
 
 
-
 # takes url and downloads the pdf from PapaCambridge. year, month, and paper used to create directories/name files
 def scrap(url, year, month, paper):
     data = requests.get(url, stream=True)
@@ -412,10 +412,22 @@ def initializeDirectories():
 
 
 #
-# fileName = dirname + r"/2017/Nov/9700_w17_qp_21.pdf"
+filePath = dirname + r"/res/2017/Nov/9700_w17_qp_11.pdf"
 # search()
+dirname = os.path.dirname(__file__)
+pdfToText(filePath, False)
+getMultipleChoiceQuestions(filePath)
+tagImage(filePath)
+# for root, dirs, files in os.walk(os.path.abspath("res")):
+#     for file in files:
+#         if "qp_1" in file and ".pdf" in file:
+#             filePath = os.path.join(root,file)
+#             print(filePath)
+#             # try:
 
-
+            # except Exception as e:
+            #     print(e)
+            #     continue
 #
-search()
+# search()
 # run()

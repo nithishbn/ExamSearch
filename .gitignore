@@ -10,3 +10,7 @@ PapaCambridgeScrapper\.zip
 img/
 
 __pycache__/
+
+build/examsearch/
+
+dist/
