@@ -412,11 +412,11 @@ def initializeDirectories():
 
 
 #
-filePath = dirname + r"/res/2017/Nov/9700_w17_qp_11.pdf"
+filePath = dirname + r"/res/2014/Jun/9700_s14_qp_13.pdf"
 # search()
 dirname = os.path.dirname(__file__)
-pdfToText(filePath, False)
-getMultipleChoiceQuestions(filePath)
+# pdfToText(filePath, False)
+# getMultipleChoiceQuestions(filePath)
 tagImage(filePath)
 # for root, dirs, files in os.walk(os.path.abspath("res")):
 #     for file in files:

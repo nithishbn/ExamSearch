@@ -11,18 +11,24 @@ app = Flask(__name__, static_url_path='')
 @app.route('/', methods=['GET', 'POST'])
 def run():
     query = request.form["query"]
+    if query is None:
+        return jsonify({"data":[],"error":1})
     val = list(webServer(query))
-    return jsonify(val)
+    if val == -1:
+        return jsonify({"data": [], "error": 1})
+    print("hi")
+    return jsonify({"data": val, "error": 0})
 
 
 @app.route('/getImage', methods=['GET', 'POST'])
 def getImage():
     imgPath = request.form["imgPath"]
-    file = re.findall("\/(question.*)",imgPath)[0]
-    dirPath = re.findall("(.*)\/question.*",imgPath)[0]
+    file = re.findall("\/(question.*)", imgPath)[0]
+    dirPath = re.findall("(.*)\/question.*", imgPath)[0]
     print(dirPath)
     print(file)
-    return send_from_directory("."+dirPath, file)
+    print("hji")
+    return send_from_directory("." + dirPath, file)
 
 
 def webServer(query):
@@ -66,17 +72,17 @@ def webServer(query):
         print(results)
     # you suck at searching/you haven't indexed enough of the MC papers to get a good result
     if len(results) == 0:
-        return "No results found!"
+        return
     # yay go you! you searched well, my young padawan
     else:
         return list(results)
         # for imgPath in results:
-        #     # imgPath = val
-        #     print(r"{}".format(imgPath))
-        #     # PULL THE LEVER, KRONK
-        #     cur.execute("select year, month, paper from main where main.main.filepath=?", (imgPath,))
-        #     stuff = cur.fetchall()
-        #     # print(stuff)
+        #         #     # imgPath = val
+        #         #     print(r"{}".format(imgPath))
+        #         #     # PULL THE LEVER, KRONK
+        #         #     cur.execute("select year, month, paper from main where main.main.filepath=?", (imgPath,))
+        #         #     stuff = cur.fetchall()
+        #         #     # print(stuff)
         #     paperInfo = list(set(stuff))[0]
         #     # print(paperInfo)
         #     year = paperInfo[0]
@@ -91,3 +97,7 @@ def webServer(query):
         #     inp = input("next: ")
         #     if inp == "quit":
         #         break
+
+#
+if __name__ == '__main__':
+    app.run(host="0.0.0.0")
