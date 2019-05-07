@@ -5,7 +5,7 @@ import re
 import shutil
 import sqlite3
 
-import flask
+
 import requests
 from PIL import Image
 from bs4 import BeautifulSoup
@@ -26,15 +26,18 @@ def pdfToText(filePath, isMarkScheme):
     # comment
     # image_jpeg is the list of all pdf pages as images
     print(filePath)
-    print("%r", open)
     image_jpeg = convert_from_path(filePath,thread_count=4,dpi=300)
 
     length = len(image_jpeg)
-    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
+    val = "\/"
+    print(val)
+    if "\\" in filePath:
+        val = '\\\\'
+    fileInfo = re.findall("([0-9].+?){val}(.+[A-z]){val}(.+).pdf".format(val=val), filePath)[0]
     # basic information about file
-    year = matches[0]
-    month = matches[1]
-    paper = matches[2]
+    year = fileInfo[0]
+    month = fileInfo[1]
+    paper = fileInfo[2]
     if not isMarkScheme:
         # creates img dir if not exists.
         print(os.path.join(dirname, "img"))
@@ -98,7 +101,8 @@ def pdfToText(filePath, isMarkScheme):
             print("Page {} transcribed".format(pageCount))
             count += 1
     print("Text transcription found at {}".format(path + "/text.txt"))
-
+    print(year, month, paper)
+    getMultipleChoiceQuestions([year,month,paper])
 
 # does the snippy snippy for the question images
 def snip(pos, img, count, path):
@@ -120,13 +124,13 @@ def snip(pos, img, count, path):
 
 
 # gets multiple choice questions
-def getMultipleChoiceQuestions(filePath):
-    print(filePath)
-    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
+def getMultipleChoiceQuestions(fileInfo):
+
+    print(fileInfo)
     # basic info again
-    year = matches[0]
-    month = matches[1]
-    paper = matches[2]
+    year = fileInfo[0]
+    month = fileInfo[1]
+    paper = fileInfo[2]
     # reads text file
     with open("./img/{}/{}/{}/text.txt".format(year, month, paper), "r") as file:
         searchLines = file.readlines()
@@ -183,7 +187,7 @@ def getMultipleChoiceQuestions(filePath):
     print(questionEndCoords)
     count = 1
     # great counter title
-    lastCounterIPromise = 1
+    questionNumber = 1
     path = dirname + "/img/{}/{}/{}".format(year, month, paper)
     # image snippy snippy
     for i in range(0, len(questionStartCoords)):
@@ -205,10 +209,10 @@ def getMultipleChoiceQuestions(filePath):
         imgName = path + "\img-{}.jpg".format(newCount)
         print(imgName)
         # snippy snippy
-        snip(fullCoord, imgName, lastCounterIPromise, [year, month, paper])
-        lastCounterIPromise += 1
+        snip(fullCoord, imgName, questionNumber, [year, month, paper])
+        questionNumber += 1
     # getMultipleChoiceAnswers(year, month, paper)
-
+    tagImage(fileInfo)
 
 def getFreeResponseQuestions(filePath):
     matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
@@ -295,11 +299,11 @@ def getFreeResponseQuestions(filePath):
 
 
 # takes image files and pairs them to their respective text tags to make the images searchable
-def tagImage(filePath):
-    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
-    year = matches[0]
-    month = matches[1]
-    paper = matches[2]
+def tagImage(fileInfo):
+
+    year = fileInfo[0]
+    month = fileInfo[1]
+    paper = fileInfo[2]
     path = dirname + "/img/{}/{}/{}".format(year, month, paper)
     questionList = []
     question = []
@@ -417,17 +421,13 @@ filePath = dirname + r"/res/2014/Jun/9700_s14_qp_13.pdf"
 dirname = os.path.dirname(__file__)
 # pdfToText(filePath, False)
 # getMultipleChoiceQuestions(filePath)
-tagImage(filePath)
-# for root, dirs, files in os.walk(os.path.abspath("res")):
+# tagImage(filePath)
+# for root, dirs, files in os.walk(os.path.abspath(".")):
 #     for file in files:
 #         if "qp_1" in file and ".pdf" in file:
 #             filePath = os.path.join(root,file)
 #             print(filePath)
-#             # try:
-
-            # except Exception as e:
-            #     print(e)
-            #     continue
+#             pdfToText(filePath, False)
 #
 # search()
 # run()

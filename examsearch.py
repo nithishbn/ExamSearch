@@ -18,26 +18,28 @@ def search():
         # print(r.status_code)
 
         if r.status_code == 200:
-            print(r.content)
+            # print(r.content)
             content = dict(ast.literal_eval(bytes.decode(r.content)))
-            print(content)
+            # print(content)
             if content['error'] == -1:
                 print("Error!")
             else:
                 values = list(set(content['data']))
                 for val in values:
-                    print(val)
+                    # print(val)
                     img = requests.post(server + "getImage", {"imgPath": val})
                     if img.status_code == 200:
-                        print(type(img.content))
+                        # print(type(img.content))
                         imgToShow = Image.open(io.BytesIO(img.content))
                         imgToShow.show()
                     else:
-                        print(img.status_code)
+                        # print(img.status_code)
                         print("Image not available")
                     q = input("wait: ")
                     if q == "quit":
                         break
+        else:
+            print("There has been an error: \'{}\'".format(r.status_code))
     input()
 
 

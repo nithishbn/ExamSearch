@@ -41,9 +41,8 @@ def webServer(query):
     results = []
     # goes through each word in the query and finds which filePath entry has that tag using cool sql
     for word in query:
-        cur.execute("select filepath from main join tags on main.tag = tags.id where tags.tag=?", (word,))
+        cur.execute("select distinct filepath from main join tags on main.tag = tags.id where tags.tag=?", (word,))
         res = cur.fetchall()
-
         for val in res:
             results.append(val[0])
     # ooh what's this you ask?
@@ -51,6 +50,7 @@ def webServer(query):
     # so if the question had the entries xylem AND transpiration, which is highly likely, then it won't open the same question twice
     # which is nice
     # print(results)
+
     # results = results[0]
     print(results)
     # results = results[0]
