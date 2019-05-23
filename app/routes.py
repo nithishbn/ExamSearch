@@ -1,51 +1,39 @@
 import os
-import re
 import sqlite3
-from flask import request, send_from_directory, render_template, flash, redirect
+from flask import render_template, redirect, session
 
 from app import app
-from app.forms import LoginForm
+from app.forms import SearchForm
 
 dirname = os.path.dirname(__file__)
 
 
-@app.route('/')
-@app.route('/index')
-def run():
-    user = {'username': 'Miguel'}
-    return render_template('index.html', title='Home', user=user)
-    # query = request.form["query"]
-    # if query is None:
-    #     return jsonify({"data":[],"error":1})
-    # val = list(webServer(query))
-    # if val == -1:
-    #     return jsonify({"data": [], "error": 1})
-    # print("hi")
-    # return jsonify({"data": val, "error": 0})
-
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    form = LoginForm()
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/index', methods=['GET', 'POST'])
+def index():
+    form = SearchForm()
     if form.validate_on_submit():
-        flash('Login requested for user {}, remember_me={}'.format(
-            form.username.data, form.remember_me.data))
-        return redirect('/index')
-    return render_template('login.html', title='Sign In', form=form)
+        res = search(form.search.data.lower())
+        # print(os.path.join("./app/static",res[0]))
+        for val in res:
+            print(val)
+        print()
+        newRes = ["./static"+val for val in res if os.path.isfile("./app/static" + val)]
+        print(newRes)
+        session['results'] = newRes
+        session['searchTerm'] = form.search.data.lower()
+        return redirect("/results")
+    return render_template('index.html', title='Home', form=form)
 
 
-@app.route('/getImage', methods=['GET', 'POST'])
-def getImage():
-    imgPath = request.form["imgPath"]
-    file = re.findall("\/(question.*)", imgPath)[0]
-    dirPath = re.findall("(.*)\/question.*", imgPath)[0]
-    print(dirPath)
-    print(file)
-    print("hji")
-    return send_from_directory("." + dirPath, file)
+@app.route('/results')
+def getResults():
+    query = session['results']
+    searchTerm = session['searchTerm']
+    return render_template('results.html', query=query,searchTerm=searchTerm)
 
 
-def webServer(query):
+def search(query):
     # multiple tags :)
     query = query.split()
     # database connection
@@ -65,15 +53,15 @@ def webServer(query):
     # print(results)
 
     # results = results[0]
-    print(results)
+    # print(results)
     # results = results[0]
     thing = []
     if len(query) > 1:
         for val in results:
-            print(results.count(val) > 1)
+            # print(results.count(val) > 1)
             if val not in thing and results.count(val) >= 1:
                 thing.append(val)
-        print(thing)
+        # print(thing)
         results = thing
         # for i in range(0, len(results) - 1, 2):
         #     print(results[i])
@@ -82,13 +70,17 @@ def webServer(query):
     # only one query? just remove the duplicates and dont do weird intersections
     else:
         results = set(results)
-        print(results)
+        # print(results)
     # you suck at searching/you haven't indexed enough of the MC papers to get a good result
     if len(results) == 0:
-        return
+        return []
     # yay go you! you searched well, my young padawan
     else:
-        return list(results)
+        results = list(results)
+        # values = ["./static{}".format(path) for path in results]
+        # print(values)
+        # return values
+        return results
         # for imgPath in results:
         #         #     # imgPath = val
         #         #     print(r"{}".format(imgPath))
@@ -110,5 +102,7 @@ def webServer(query):
         #     inp = input("next: ")
         #     if inp == "quit":
         #         break
-if __name__ == "__main__":
-    app.run(host="0.0.0.0")
+
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", debug=True)
