@@ -1,6 +1,6 @@
 import os
 import sqlite3
-from flask import render_template, redirect, session
+from flask import render_template, redirect, session, request
 
 from app import app
 from app.forms import SearchForm
@@ -26,11 +26,23 @@ def index():
     return render_template('index.html', title='Home', form=form)
 
 
-@app.route('/results')
+@app.route('/results',methods=['GET','POST'])
 def getResults():
     query = session['results']
     searchTerm = session['searchTerm']
-    return render_template('results.html', query=query,searchTerm=searchTerm)
+    newForm = SearchForm(request.form)
+    if newForm.validate_on_submit():
+        res = search(newForm.search.data.lower())
+        # print(os.path.join("./app/static",res[0]))
+        for val in res:
+            print(val)
+        print()
+        newRes = ["./static" + val for val in res if os.path.isfile("./app/static" + val)]
+        print(newRes)
+        session['results'] = newRes
+        session['searchTerm'] = newForm.search.data.lower()
+        return redirect("/results")
+    return render_template('results.html', query=query,searchTerm=searchTerm,form=newForm)
 
 
 def search(query):

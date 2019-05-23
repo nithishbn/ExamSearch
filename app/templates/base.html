@@ -1,7 +1,15 @@
 {% extends 'bootstrap/base.html' %}
+{% block styles %}
+{{super()}}
+<link rel="stylesheet" href="{{url_for('static', filename='style.css')}}">
+<link href="https://fonts.googleapis.com/css?family=Merriweather|Poppins&display=swap" rel="stylesheet">
+{% endblock %}
+
 {% block title %}
 {% if title %}{{ title }} - Exam Search{% else %}Welcome to Exam Search{% endif %}
 {% endblock %}
+<body>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 {% block navbar %}
 <nav class="navbar navbar-default">
@@ -21,3 +29,4 @@
     {% block app_content %}{% endblock %}
 </div>
 {% endblock %}
+</body>
