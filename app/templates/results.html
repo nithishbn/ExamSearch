@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Results for '{{ searchTerm }}'</h1>
+<!--<p>{{ query }}</p>-->
+{% if query|length > 0 %}
+<ul class="list-group" style="width:inherit">
+    <li class="list-group-item" style="margin-bottom: 50%; border: double black;">
+        {% for image in query %}
+        <img src="{{ image }}" alt="image" style="width: 50%">
+        {% endfor %}
+    </li>
+</ul>
+{% endif %}
+{% endblock %}

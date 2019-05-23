@@ -7,7 +7,7 @@ PapaCambridgeScrapper\.7z
 
 PapaCambridgeScrapper\.zip
 
-img/
+app/static/img/
 
 __pycache__/
 
