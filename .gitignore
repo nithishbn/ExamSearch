@@ -3,16 +3,9 @@
 
 *.pdf
 
-PapaCambridgeScrapper\.7z
 
-PapaCambridgeScrapper\.zip
-
-app/static/img/
+app/static/
 
 __pycache__/
 
-build/examsearch/
 
-dist/
-
-img/2002/Nov/9700_w02_qp_1/
