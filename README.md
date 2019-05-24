@@ -1,11 +1,15 @@
 # Exam Search
 
-ExamSearch is an application that allows Cambridge students to go through past Cambridge exam papers and search them for content to study.
+ExamSearch is a website that allows Cambridge students to go through past Cambridge exam papers and search them for content to study.
 
 Currently, ExamSearch only supports Biology 9700 Multiple Choice Papers, but support for free-response and other types of papers in Biology 9700 as well as for other subjects is on the roadmap.
 
 ## Installation
+### Note
+**It is important to note that the following instructions for installation are simply for creating your own instance of the server**
+A working copy of this project can be found at [my website](http://www.nithishnarasimman.com)
 
+If you'd like your own version of the parser, continue following the directions.
 Clone the repository, and install the requirements listed below.
 ### Requirements
 #### Python 3
@@ -71,7 +75,7 @@ For further details, visit this page for the [complete roadmap](https://app.gitk
 
 ### Authors and acknowledgment
 Head Developer - Nithish Narasimman<br>
-Assistant Developer - Eric Marnadi
+
 
 [![forthebadge](https://forthebadge.com/images/badges/made-with-python.svg)](https://forthebadge.com)
 
