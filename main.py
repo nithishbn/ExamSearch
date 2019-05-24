@@ -1,9 +1,14 @@
+import ast
+import io
 import os
 import re
 import shutil
 import sqlite3
 
+import flask
+import requests
 from PIL import Image
+from bs4 import BeautifulSoup
 from pdf2image import convert_from_path
 import pyocr.builders
 from nltk.corpus import stopwords
@@ -21,9 +26,9 @@ def pdfToText(filePath, isMarkScheme):
     # comment
     # image_jpeg is the list of all pdf pages as images
     print(filePath)
-    # if isMarkScheme:
-    #     filePath
-    image_jpeg = convert_from_path(filePath, thread_count=4, dpi=300)
+    print("%r", open)
+    image_jpeg = convert_from_path(filePath,thread_count=4,dpi=300)
+
     length = len(image_jpeg)
     matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
     # basic information about file
@@ -39,8 +44,8 @@ def pdfToText(filePath, isMarkScheme):
             os.makedirs(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper)))
         path = os.path.dirname(__file__) + "/img/{}/{}/{}".format(year, month, paper)
         length -= 1
+        print("dirs created")
     else:
-
         paperNew = ""
         for i, letter in enumerate(paper):
             if letter == "m" and paper[i + 1] == "s":
@@ -78,9 +83,10 @@ def pdfToText(filePath, isMarkScheme):
             )
             # where the magic happens for OCR
             for line in txt:
-                wrt.write("{content} | ({x1},{y1}) ({x2},{y2})\n".format(content=line.content, x1=line.position[0][0],
-                                                                         y1=line.position[0][1], x2=line.position[1][0],
-                                                                         y2=line.position[1][1]))
+                wrt.write(
+                    "{content} | ({x1},{y1}) ({x2},{y2})\n".format(content=line.content, x1=line.position[0][0],
+                                                                   y1=line.position[0][1], x2=line.position[1][0],
+                                                                   y2=line.position[1][1]))
                 print(line.content)
             img = Image.open(file)
             if count < 10:
@@ -99,20 +105,23 @@ def snip(pos, img, count, path):
     year = path[0]
     month = path[1]
     paper = path[2]
-    img_to_crop = Image.open(img)
-    if count < 10:
-        thing = "0" + str(count)
-    else:
-        thing = str(count)
-    # if you're bad at life
-    if len(pos) != 4:
+    with Image.open(img) as img_to_crop:
+        if count < 10:
+            thing = "0" + str(count)
+        else:
+            thing = str(count)
         print(pos)
-    else:
-        img_to_crop.crop(pos).save("./img/{}/{}/{}/question{}.jpg".format(year, month, paper, thing))
+        if pos[3] >= pos[1]:
+            if len(pos) != 4:
+                print(pos)
+            else:
+                img_to_crop.crop(pos).save("./img/{}/{}/{}/question{}.jpg".format(year, month, paper, thing))
+                return 1
 
 
 # gets multiple choice questions
 def getMultipleChoiceQuestions(filePath):
+    print(filePath)
     matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
     # basic info again
     year = matches[0]
@@ -129,7 +138,7 @@ def getMultipleChoiceQuestions(filePath):
     oldLine = ""
     # decided to cave in and just use the maximum margin because calculating the greatest x value was such a pain
     greatestXValue = 2480
-    coordHolder = ()
+    coordHolder = (0, 0)
     # starts from 3rd line to skip over basic info
     for i in range(3, len(searchLines)):
         line = searchLines[i]
@@ -142,13 +151,12 @@ def getMultipleChoiceQuestions(filePath):
             questionEndCoords.append(pageNumber)
             questionStartCoords.append(coordHolder)
             questionStartCoords.append("end")
-            coordHolder = ()
+
             endOfPage = True
             continue
         # this was just being annoying
         if "UCLES" in line:
             continue
-
         # finds the two coordinates in the line
         pos = re.findall("\| (\([0-9].*\)) (.*[0-9]\))", line)[0]
         # questionNumber
@@ -200,6 +208,90 @@ def getMultipleChoiceQuestions(filePath):
         snip(fullCoord, imgName, lastCounterIPromise, [year, month, paper])
         lastCounterIPromise += 1
     # getMultipleChoiceAnswers(year, month, paper)
+
+
+def getFreeResponseQuestions(filePath):
+    matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
+    year = matches[0]
+    month = matches[1]
+    paper = matches[2]
+    path = dirname + "/img/{}/{}/{}".format(year, month, paper)
+    questionStart = False
+    questionStartCoords = []
+    questionEndCoords = []
+    oldLine = ""
+    endOfPage = False
+    greatestXValue = 2480
+    with open(path + "/text.txt", "r") as file:
+        lines = file.readlines()
+        for i in range(3, len(lines)):
+            line = lines[i]
+            # finds the two coordinates in the line
+            pos = re.findall("\| (\([0-9].*\)) (.*[0-9]\))", line)[0]
+            # questionNumber
+            questionNumber = re.findall("^([0-9].*?)(?=\.| )", line)
+            # these should always be correct/never fail... except when they do ugh
+            coord1 = eval(pos[0])
+            if "page end" in line:
+                print(line)
+                endOfPage = True
+                # continue
+            if "[Total:" in line:
+                print(line)
+                questionStart = False
+                questionStartCoords.append(coordHolder)
+                questionEndCoords.append((greatestXValue, eval(pos[1])[1]))
+                continue
+            # checks if the line is the question start line
+            if 205 <= int(coord1[0]) <= 210 and len(questionNumber) > 0 and type(eval(questionNumber[0])) is int:
+                # is a question being parsed currently and have you stumbled upon the next question?
+                # if so, put the last line in and assume this as the start of the next question
+                print(line)
+                if questionStart:
+                    questionStartCoords.append(coordHolder)
+                    if oldLine != "":
+                        pos = re.findall("\| (\(.*[0-9]\)) (.*[0-9]\))", oldLine)[0]
+                        if endOfPage:
+                            endOfPage = False
+                            print(line)
+                            questionEndCoords.append((greatestXValue, eval(pos[1])[1]))
+                questionStart = True
+                coordHolder = coord1
+            # make the oldLine the line value for the endOfQuestionCoords list
+            oldLine = line
+    print(questionStartCoords)
+    print(questionEndCoords)
+    print("hi")
+    count = 1
+    # great counter title
+    lastCounterIPromise = 1
+    path = dirname + "/img/{}/{}/{}".format(year, month, paper)
+    # image snippy snippy
+    for i in range(0, len(questionStartCoords)):
+        # grab set of start and end coords
+        coord1 = questionStartCoords[i]
+        endCoord = questionEndCoords[i]
+        # reached end of page
+        if coord1 == 'end':
+            print("page end reached = {}".format(endCoord))
+            count += 1
+            continue
+        # this is how the snip tool takes the coordinates
+        fullCoord = coord1 + endCoord
+        print("fullcoord={}".format(fullCoord))
+        if count < 10:
+            newCount = "0" + str(count)
+        elif count >= 10:
+            newCount = str(count)
+        imgName = path + "\img-{}.jpg".format(newCount)
+        print(imgName)
+        # snippy snippy
+        res = snip(fullCoord, imgName, lastCounterIPromise, [year, month, paper])
+        if res == 1:
+            print("all good")
+        else:
+            print("skipping this one")
+        lastCounterIPromise += 1
 
 
 # takes image files and pairs them to their respective text tags to make the images searchable
@@ -268,133 +360,74 @@ def tagImage(filePath):
 
 
 # search! :D
-def search():
-    query = ""
-    while True:
-        query = input("Query: ")
-        if query == "quit":
-            break
-        # multiple tags :)
-        query = query.split()
-        # database connection
-        conn = sqlite3.connect("questions.sqlite")
-        cur = conn.cursor()
-        results = []
-        # goes through each word in the query and finds which filePath entry has that tag using cool sql
-        for word in query:
-            cur.execute("select filepath from main join tags on main.tag = tags.id where tags.tag=?", (word,))
-            res = cur.fetchall()
-            results.append(res)
-        # ooh what's this you ask?
-        # this intersection thing basically removes duplicate file paths in case multiple tags exist in the same question
-        # so if the question had the entries xylem AND transpiration, which is highly likely, then it won't open the same question twice
-        # which is nice
-        if len(query) > 1:
-            for i in range(0, len(results) - 1, 2):
-                results = list(set(results[i]).intersection(results[i + 1]))
-        # only one query? just remove the duplicates and dont do weird intersections
-        else:
-            results = set(results[0])
-        # you suck at searching/you haven't indexed enough of the MC papers to get a good result
-        if len(results) == 0:
-            print("No results found!")
-        # yay go you! you searched well, my young padawan
-        else:
-            for val in results:
-                imgPath = val[0]
-                print(r"{}".format(imgPath))
-                # PULL THE LEVER, KRONK
-                img = Image.open(dirname + imgPath)
-                img.show()
-                # print(val)
-                cur.execute("select year, month, paper from main where main.main.filepath=?", (imgPath,))
-                stuff = cur.fetchall()
-                print(stuff)
-                paperInfo = list(set(stuff))[0]
-                print(paperInfo)
-                year = paperInfo[0]
-                month = paperInfo[1]
-                paper = paperInfo[2]
-
-                # WRONG LEVAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-                # jk it's the right lever get hekt
-                inp = input("next: ")
-                if inp == "quit":
-                    break
 
 
-def getMultipleChoiceAnswers(year, month, paper):
-    dirname = os.path.dirname(__file__)
-    paperDir = paper.format("qp")
-    path = "/img/{}/{}/{}".format(year, month, paperDir)
-    paper = paper.format("ms")
-    markSchemePath = path + "/ms"
-    # print(markSchemePath)
-    fullPath = dirname + markSchemePath
-    print(fullPath)
-
-    if os.path.exists(fullPath):
-        shutil.rmtree(fullPath)
-    os.makedirs(fullPath)
-    print("this will take a while because the mark scheme has not been parsed and indexed yet")
-    markScheme = ""
-    for i, letter in enumerate(paper):
-        if letter == "q" and paper[i + 1] == "p":
-            markScheme += "m"
-        elif letter == "p" and paper[i - 1] == "q":
-            markScheme += "s"
-        else:
-            markScheme += letter
-    pdfToText(dirname + "/{}/{}/{}.pdf".format(year, month, markScheme), True)
-    print("Mark Scheme indexed!")
+# takes url and downloads the pdf from PapaCambridge. year, month, and paper used to create directories/name files
+def scrap(url, year, month, paper):
+    data = requests.get(url, stream=True)
+    if data.status_code != 200:
+        print("error :(")
+    else:
+        if not os.path.exists(year):
+            os.makedirs(year)
+        if not os.path.exists(os.path.join(dirname, "{}/{}".format(year, month))):
+            os.makedirs("{}/{}".format(year, month))
+        path = os.path.join(dirname, "{year}/{month}/{paper}.pdf".format(year=year, month=month, paper=paper))
+        with open(path, "wb") as file:
+            # if not os.path.exists(path):
+            file.write(data.content)
 
 
-fileName = dirname + r"/2016/Jun/9700_s16_qp_12.pdf"
-# conn = sqlite3.connect("questions.sqlite")
-# cur = conn.cursor()
-# cur.close()
-# conn.commit()
-# conn.close()
-# pdfToText(fileName,False)
-# getMultipleChoiceQuestions(fileName)
-# tagImage(fileName)
-# getMultipleChoiceAnswers("2018","Oct-Nov","9700_w18_qp_13")
-search()
-# for root, dirs, files in os.walk(u"."):
-#     path = root.split(os.sep)
-#     # print((len(path) - 1) * '---', os.path.basename(root))
+def initializeDirectories():
+    baseUrl = "https://pastpapers.papacambridge.com/?dir=Cambridge%20International%20Examinations%20%28CIE%29%2FAS%20and%20A%20Level%2FBiology%20%289700%29"
+    domain = "https://pastpapers.papacambridge.com"
+    directory = requests.get(baseUrl)
+    soup = BeautifulSoup(directory.content, "html.parser")
+    aTags = list(soup.find_all('a', class_="clearfix", href=True))
+    newList = list()
+    for i in range(0, len(aTags) - 2):  # len(aTags) - 2
+        dirThing = aTags[i]['href']
+        monthDir = requests.get(domain + "/" + dirThing)
+        soup = BeautifulSoup(monthDir.content, "html.parser")
+        fileTags = list(soup.find_all('a', class_="clearfix", href=True))
+        for j in range(1, len(fileTags)):
+            tag = fileTags[j]
+            file = tag['href']
+            thing = "{file}".format(file=file)[12::]
+            print(thing)
+            # this regex finds the year, the month, and the paper name
+            matches = re.findall("(?:Biology%20%289700%29/)([0-9].+?)%20(.+[A-z])/(.+).pdf", thing)
+            if len(matches) == 0:
+                # this regex does the same but looks for a dash instead of a space because papacambridge sucks
+                matches = re.findall("(?:Biology%20%289700%29/)([0-9].+?)-(.+[A-z])/(.+).pdf", thing)
+            if matches is not None and len(matches) != 0:
+                print(matches)
+                matches = matches[0]
+                year = matches[0]
+                month = matches[1]
+                paper = matches[2]
+                print(domain + thing)
+                # takes year, month, and paper name and appends it to the base domain to get it from PapaCambridge
+                scrap("{domain}/{file}".format(domain=domain, file=thing), year, month, paper)
+
+
+#
+filePath = dirname + r"/res/2014/Jun/9700_s14_qp_13.pdf"
+# search()
+dirname = os.path.dirname(__file__)
+# pdfToText(filePath, False)
+# getMultipleChoiceQuestions(filePath)
+tagImage(filePath)
+# for root, dirs, files in os.walk(os.path.abspath("res")):
 #     for file in files:
-#         if "qp_1" in file:
-#             print(path)
-#             # print(len(path) * '---', file)
-#             # fileName = dirname + path[1]+"/" + file
-#             fileName = "{}/{}/{}/{}".format(dirname, path[1], path[2], file)
-#             pdfToText(fileName, False)
-#             getMultipleChoiceQuestions(fileName)
-#             tagImage(fileName)
+#         if "qp_1" in file and ".pdf" in file:
+#             filePath = os.path.join(root,file)
+#             print(filePath)
+#             # try:
 
-def index(yearStart,num):
-    directory = dirname + "/"
-    intYearStart = int(yearStart)
-    # for root, dirs, files in os.walk(u"."):
-    #     path = root.split(os.sep)
-    #     # print((len(path) - 1) * '---', os.path.basename(root))
-    for i in range(num):
-        for subRoot, subDirs, subFiles in os.walk(directory+yearStart):
-            newpath = subRoot.split(os.sep)
-            # print(newpath)
-            for file in subFiles:
-                if "qp_1" in file:
-                    print(newpath[0]+"/"+newpath[1]+"/"+file)
-        yearStart = str(intYearStart + 1)
-        print(yearStart)
-        # for file in files:
-        #     if "qp_1" in file:
-        #         print(path)
-        #         # print(len(path) * '---', file)
-        #         # fileName = dirname + path[1]+"/" + file
-        #         fileName = "{}/{}/{}/{}".format(dirname, path[1], path[2], file)
-        #         pdfToText(fileName, False)
-        #         getMultipleChoiceQuestions(fileName)
-        #         tagImage(fileName)
-# index("2002",10)
+            # except Exception as e:
+            #     print(e)
+            #     continue
+#
+# search()
+# run()
