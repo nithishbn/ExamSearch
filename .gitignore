@@ -3,12 +3,13 @@
 
 *.pdf
 
-PapaCambridgeScrapper\.7z
 
-PapaCambridgeScrapper\.zip
+app/static/
 
 app/static/img/
 
 app/__pycache__/
 
 __pycache__/
+
+
