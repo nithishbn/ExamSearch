@@ -5,7 +5,6 @@ import re
 import shutil
 import sqlite3
 
-
 import requests
 from PIL import Image
 from bs4 import BeautifulSoup
@@ -26,7 +25,7 @@ def pdfToText(filePath, isMarkScheme):
     # comment
     # image_jpeg is the list of all pdf pages as images
     print(filePath)
-    image_jpeg = convert_from_path(filePath,thread_count=4,dpi=300)
+    image_jpeg = convert_from_path(filePath, thread_count=4, dpi=300)
 
     length = len(image_jpeg)
     val = "\/"
@@ -40,12 +39,12 @@ def pdfToText(filePath, isMarkScheme):
     paper = fileInfo[2]
     if not isMarkScheme:
         # creates img dir if not exists.
-        print(os.path.join(dirname, "img"))
-        if os.path.exists(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper))):
-            shutil.rmtree(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper)))
-        if not os.path.exists(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper))):
-            os.makedirs(os.path.join(dirname, "img/{}/{}/{}".format(year, month, paper)))
-        path = os.path.dirname(__file__) + "/img/{}/{}/{}".format(year, month, paper)
+        print(os.path.join(dirname, "app/static/img"))
+        if os.path.exists(os.path.join(dirname, "app/static/img/{}/{}/{}".format(year, month, paper))):
+            shutil.rmtree(os.path.join(dirname, "app/static/img/{}/{}/{}".format(year, month, paper)))
+        if not os.path.exists(os.path.join(dirname, "app/static/img/{}/{}/{}".format(year, month, paper))):
+            os.makedirs(os.path.join(dirname, "app/static/img/{}/{}/{}".format(year, month, paper)))
+        path = os.path.dirname(__file__) + "/app/static/img/{}/{}/{}".format(year, month, paper)
         length -= 1
         print("dirs created")
     else:
@@ -58,7 +57,7 @@ def pdfToText(filePath, isMarkScheme):
             else:
                 paperNew += letter
         print(paperNew)
-        path = os.path.dirname(__file__) + "/img/{}/{}/{}/ms".format(year, month, paperNew)
+        path = os.path.dirname(__file__) + "/app/static/img/{}/{}/{}/ms".format(year, month, paperNew)
     count = 1
     builder = pyocr.builders.LineBoxBuilder()
     # writes basic info to be accessed later
@@ -102,7 +101,8 @@ def pdfToText(filePath, isMarkScheme):
             count += 1
     print("Text transcription found at {}".format(path + "/text.txt"))
     print(year, month, paper)
-    getMultipleChoiceQuestions([year,month,paper])
+    getMultipleChoiceQuestions([year, month, paper])
+
 
 # does the snippy snippy for the question images
 def snip(pos, img, count, path):
@@ -119,20 +119,19 @@ def snip(pos, img, count, path):
             if len(pos) != 4:
                 print(pos)
             else:
-                img_to_crop.crop(pos).save("./img/{}/{}/{}/question{}.jpg".format(year, month, paper, thing))
+                img_to_crop.crop(pos).save("./app/static/img/{}/{}/{}/question{}.jpg".format(year, month, paper, thing))
                 return 1
 
 
 # gets multiple choice questions
 def getMultipleChoiceQuestions(fileInfo):
-
     print(fileInfo)
     # basic info again
     year = fileInfo[0]
     month = fileInfo[1]
     paper = fileInfo[2]
     # reads text file
-    with open("./img/{}/{}/{}/text.txt".format(year, month, paper), "r") as file:
+    with open("./app/static/img/{}/{}/{}/text.txt".format(year, month, paper), "r") as file:
         searchLines = file.readlines()
     # lst contains
     questionStartCoords = list()
@@ -155,7 +154,6 @@ def getMultipleChoiceQuestions(fileInfo):
             questionEndCoords.append(pageNumber)
             questionStartCoords.append(coordHolder)
             questionStartCoords.append("end")
-
             endOfPage = True
             continue
         # this was just being annoying
@@ -168,7 +166,11 @@ def getMultipleChoiceQuestions(fileInfo):
         # these should always be correct/never fail... except when they do ugh
         coord1 = eval(pos[0])
         # checks if the line is the question start line
-        if 205 <= int(coord1[0]) <= 210 and len(questionNumber) > 0 and type(eval(questionNumber[0])) is int:
+        if 205 <= int(coord1[0]) <= 210 and len(questionNumber) > 0 and type(eval(questionNumber[0])) is int or endOfPage:
+            if not (205 <= int(coord1[0]) <= 210 and len(questionNumber) > 0 and type(eval(questionNumber[0])) is int):
+                coord1 = (0,0)
+                endOfPage = False
+                # questionStart=True
             # is a question being parsed currently and have you stumbled upon the next question?
             # if so, put the last line in and assume this as the start of the next question
             if questionStart:
@@ -185,34 +187,43 @@ def getMultipleChoiceQuestions(fileInfo):
     # lineBeforeList.pop(2)
     print(questionStartCoords)
     print(questionEndCoords)
-    count = 1
+    pageNumber = '01'
     # great counter title
     questionNumber = 1
-    path = dirname + "/img/{}/{}/{}".format(year, month, paper)
+    path = dirname + "/app/static/img/{}/{}/{}".format(year, month, paper)
+    testList = []
     # image snippy snippy
+    print(len(questionEndCoords) == len(questionStartCoords))
     for i in range(0, len(questionStartCoords)):
         # grab set of start and end coords
         coord1 = questionStartCoords[i]
         endCoord = questionEndCoords[i]
         # reached end of page
         if coord1 == 'end':
-            print("page end reached = {}".format(endCoord))
-            count += 1
+            print("page end reached = {}\n".format(endCoord))
+            print(questionStartCoords)
+            print(questionEndCoords)
+            if int(endCoord) < 9:
+                pageNumber = "0" + (str(int(endCoord) + 1))
+            else:
+                pageNumber = (str(int(endCoord) + 1))
+            # questionNumber += 2
             continue
         # this is how the snip tool takes the coordinates
         fullCoord = coord1 + endCoord
         print("fullcoord={}".format(fullCoord))
-        if count < 10:
-            newCount = "0" + str(count)
-        elif count >= 10:
-            newCount = str(count)
-        imgName = path + "\img-{}.jpg".format(newCount)
+        print("question number = {}".format(questionNumber))
+        imgName = path + "/img-{}.jpg".format(pageNumber)
         print(imgName)
         # snippy snippy
+        testList.append(questionNumber)
         snip(fullCoord, imgName, questionNumber, [year, month, paper])
         questionNumber += 1
+
     # getMultipleChoiceAnswers(year, month, paper)
-    tagImage(fileInfo)
+    # tagImage(fileInfo)
+    print(testList)
+
 
 def getFreeResponseQuestions(filePath):
     matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
@@ -300,11 +311,10 @@ def getFreeResponseQuestions(filePath):
 
 # takes image files and pairs them to their respective text tags to make the images searchable
 def tagImage(fileInfo):
-
     year = fileInfo[0]
     month = fileInfo[1]
     paper = fileInfo[2]
-    path = dirname + "/img/{}/{}/{}".format(year, month, paper)
+    path = dirname + "app/static/img/{}/{}/{}".format(year, month, paper)
     questionList = []
     question = []
     questionStart = False
@@ -348,8 +358,8 @@ def tagImage(fileInfo):
                 questionNumber = "0" + questionNumber
 
             # smart filePath
-            insertFilePath = "/img/{}/{}/{}/question{}.jpg".format(year, month, paper, questionNumber)
-            answer = "/img/{}/{}/{}/question{}-ms.jpg".format(year, month, paper, questionNumber)
+            insertFilePath = "app/static/img/{}/{}/{}/question{}.jpg".format(year, month, paper, questionNumber)
+            answer = "/app/static/img/{}/{}/{}/question{}-ms.jpg".format(year, month, paper, questionNumber)
             # row insertion
             for tag in tags:
                 # insert new tags into the tags table
@@ -416,12 +426,19 @@ def initializeDirectories():
 
 
 #
-filePath = dirname + r"/res/2014/Jun/9700_s14_qp_13.pdf"
+filePath = dirname + r"/data/2014/Jun/9700_s14_qp_13.pdf"
 # search()
 dirname = os.path.dirname(__file__)
 # pdfToText(filePath, False)
-# getMultipleChoiceQuestions(filePath)
-# tagImage(filePath)
+val = "\/"
+print(val)
+if "\\" in filePath:
+    val = '\\\\'
+fileInfo = re.findall("([0-9].+?){val}(.+[A-z]){val}(.+).pdf".format(val=val), filePath)[0]
+getMultipleChoiceQuestions(fileInfo)
+# snip((210, 1455, 2480, 1966), "D:/Nithish/cambridgepaperparser/app/static/img/2014/Jun/9700_s14_qp_13/img-07.jpg", 15,
+#      [2014, "Jun", "9700_s14_qp_13"])
+# # tagImage(filePath)
 # for root, dirs, files in os.walk(os.path.abspath(".")):
 #     for file in files:
 #         if "qp_1" in file and ".pdf" in file:
