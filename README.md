@@ -51,11 +51,11 @@ nltk.download('stopwords')
 You only need to run this once before you run `main.py`.
 
 ## Usage
-* First, you will need to run `scrap.py` in order to download all past Cambridge papers from, currently, the Biology section on PapaCambridge. This will allow you to proceed with the next steps.
+* First, you will need to run `initializeDirectories()` from `main.py` in order to download all past Cambridge papers from, currently, the Biology section on PapaCambridge. This will allow you to proceed with the next steps.
 * Grab any multiple choice pdf file path and feed it through `pdfToText(filePath)`
 * run `getMultipleChoiceQuestions(filePath)` in order to, well, get the multiple choice questions
 * Run `tagImage(filePath)` in order to get image tags for each question into a database
-* Finally, you may run `search()` in order to search for questions!
+* Finally, you may run `search()` in order to search for questions! `search()` has been moved to the `app/routes.py` because it is part of the website search algorithm now
 
 *Happy studying!*
 
