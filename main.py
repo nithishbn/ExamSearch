@@ -103,7 +103,6 @@ def pdfToText(filePath, isMarkScheme):
     print(year, month, paper)
     getMultipleChoiceQuestions([year, month, paper])
 
-
 # does the snippy snippy for the question images
 def snip(pos, img, count, path):
     year = path[0]
@@ -223,7 +222,6 @@ def getMultipleChoiceQuestions(fileInfo):
     # getMultipleChoiceAnswers(year, month, paper)
     # tagImage(fileInfo)
     print(testList)
-
 
 def getFreeResponseQuestions(filePath):
     matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
