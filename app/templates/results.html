@@ -10,12 +10,15 @@
 {% if query|length > 0 %}
 <h1 style="padding: 0 0 0 8px; width: 100%">Results for '{{ searchTerm }}'</h1>
 <ul class="list-group" style="width: 100%;padding-left: 0.5em;">
-    {% for image in query %}
+    {% for val in query%}
+
     <li class="list-group-item" style=" width: 100%;">
-        <img src="{{ image }}" alt="image"
+        <p>{{ val[1] }} {{ val[2] }} {{ val[3] }}</p>
+        <img src="{{ val[0] }}" alt="image"
              style="width: 100%; height: inherit;padding: 0 0 0 1em; margin-bottom: 1em;">
     </li>
     {% endfor %}
+
 </ul>
 {% endif %}
 {% if query|length == 0%}

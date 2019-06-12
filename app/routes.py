@@ -14,13 +14,13 @@ def index():
     form = SearchForm()
     if form.validate_on_submit():
         res = search(form.search.data.lower())
+        print(res)
         # print(os.path.join("./app/static",res[0]))
         for val in res:
-            print(val)
+            print(val[0])
         print()
-        newRes = ["./static"+val for val in res if os.path.isfile("./app/static" + val)]
-        print(newRes)
-        session['results'] = newRes
+        # print(newRes)
+        session['results'] = res
         session['searchTerm'] = form.search.data.lower()
         return redirect("/results")
     return render_template('index.html', title='Home', form=form)
@@ -29,6 +29,10 @@ def index():
 @app.route('/results',methods=['GET','POST'])
 def getResults():
     query = session['results']
+    # info = [ for val in query]
+    query = [("./static" + val[0],val[1], val[2], val[3]) for val in query if os.path.isfile("./app/static" + val[0])]
+    print()
+
     searchTerm = session['searchTerm']
     newForm = SearchForm(request.form)
     if newForm.validate_on_submit():
@@ -37,7 +41,7 @@ def getResults():
         for val in res:
             print(val)
         print()
-        newRes = ["./static" + val for val in res if os.path.isfile("./app/static" + val)]
+        newRes = ["./static" + val[0] for val in res if os.path.isfile("./app/static" + val)]
         print(newRes)
         session['results'] = newRes
         session['searchTerm'] = newForm.search.data.lower()
@@ -54,10 +58,11 @@ def search(query):
     results = []
     # goes through each word in the query and finds which filePath entry has that tag using cool sql
     for word in query:
-        cur.execute("select distinct filepath from main join tags on main.tag = tags.id where tags.tag=?", (word,))
+        cur.execute("select distinct filepath,year,month,paper from main join tags on main.tag = tags.id where tags.tag=?", (word,))
         res = cur.fetchall()
+        print(res)
         for val in res:
-            results.append(val[0])
+            results.append(val)
     # ooh what's this you ask?
     # this intersection thing basically removes duplicate file paths in case multiple tags exist in the same question
     # so if the question had the entries xylem AND transpiration, which is highly likely, then it won't open the same question twice
