@@ -19,10 +19,16 @@
 <nav class="navbar navbar-default">
     <div class="container-fluid">
         <div class="navbar-header">
-            <a class="navbar-brand" href="{{ url_for('index')}}">Exam Search</a>
+            <a class="navbar-brand" href="{{ url_for('index')}}">Nithish Narasimman</a>
         </div>
         <ul class="nav navbar-nav">
             <li class="active"><a href="{{ url_for('index')}}">Home</a></li>
+        </ul>
+        <ul class="nav navbar-nav">
+            <li class="active"><a href="{{ url_for('index')}}">Portfolio</a></li>
+        </ul>
+        <ul class="nav navbar-nav">
+            <li class="active"><a href="{{ url_for('examSearch')}}">Exam Search</a></li>
         </ul>
     </div>
 </nav>
@@ -34,13 +40,8 @@
     {% endblock %}
 
 </div>
-<div class="footer" style="margin: 0 0 1.5em 1.5em; position: absolute; bottom: 0;">
-        {% block footer %}
-        © Nithish Narasimman
-        <a href="https://www.gitlab.com/nithishbn/examsearch/">Project details</a>
-
-        {% endblock %}
-    </div>
+{% block footer %}
+    {% endblock %}
 {% endblock %}
 </body>
 </html>

@@ -13,3 +13,7 @@ html {
 h1 {
     font-family: 'Poppins', sans-serif;
 }
+.test {
+    width: 2em;
+    height: 2em
+}
