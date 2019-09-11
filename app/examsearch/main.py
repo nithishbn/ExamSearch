@@ -103,6 +103,7 @@ def pdfToText(filePath, isMarkScheme):
     print(year, month, paper)
     getMultipleChoiceQuestions([year, month, paper])
 
+
 # does the snippy snippy for the question images
 def snip(pos, img, count, path):
     year = path[0]
@@ -165,9 +166,10 @@ def getMultipleChoiceQuestions(fileInfo):
         # these should always be correct/never fail... except when they do ugh
         coord1 = eval(pos[0])
         # checks if the line is the question start line
-        if 205 <= int(coord1[0]) <= 210 and len(questionNumber) > 0 and type(eval(questionNumber[0])) is int or endOfPage:
+        if 205 <= int(coord1[0]) <= 210 and len(questionNumber) > 0 and type(
+                eval(questionNumber[0])) is int or endOfPage:
             if not (205 <= int(coord1[0]) <= 210 and len(questionNumber) > 0 and type(eval(questionNumber[0])) is int):
-                coord1 = (0,0)
+                coord1 = (0, 0)
                 endOfPage = False
                 # questionStart=True
             # is a question being parsed currently and have you stumbled upon the next question?
@@ -222,6 +224,7 @@ def getMultipleChoiceQuestions(fileInfo):
     # getMultipleChoiceAnswers(year, month, paper)
     # tagImage(fileInfo)
     print(testList)
+
 
 def getFreeResponseQuestions(filePath):
     matches = re.findall("([0-9].+?)\/(.+[A-z])\/(.+).pdf", filePath)[0]
@@ -422,11 +425,12 @@ def initializeDirectories():
                 # takes year, month, and paper name and appends it to the base domain to get it from PapaCambridge
                 scrap("{domain}/{file}".format(domain=domain, file=thing), year, month, paper)
 
+
 def search(query):
     # multiple tags :)
     query = query.split()
     # database connection
-    conn = sqlite3.connect("questions.sqlite")
+    conn = sqlite3.connect("app/examsearch/questions.sqlite")
     cur = conn.cursor()
     results = []
     # goes through each word in the query and finds which filePath entry has that tag using cool sql
@@ -494,17 +498,19 @@ def search(query):
         #     inp = input("next: ")
         #     if inp == "quit":
         #         break
+
+
 #
 filePath = dirname + r"/data/2014/Jun/9700_s14_qp_13.pdf"
 # search()
-dirname = os.path.dirname(__file__)
-# pdfToText(filePath, False)
-val = "\/"
-print(val)
-if "\\" in filePath:
-    val = '\\\\'
-fileInfo = re.findall("([0-9].+?){val}(.+[A-z]){val}(.+).pdf".format(val=val), filePath)[0]
-getMultipleChoiceQuestions(fileInfo)
+# dirname = os.path.dirname(__file__)
+# # pdfToText(filePath, False)
+# val = "\/"
+# print(val)
+# if "\\" in filePath:
+#     val = '\\\\'
+# fileInfo = re.findall("([0-9].+?){val}(.+[A-z]){val}(.+).pdf".format(val=val), filePath)[0]
+# getMultipleChoiceQuestions(fileInfo)
 # snip((210, 1455, 2480, 1966), "D:/Nithish/cambridgepaperparser/app/static/img/2014/Jun/9700_s14_qp_13/img-07.jpg", 15,
 #      [2014, "Jun", "9700_s14_qp_13"])
 # # tagImage(filePath)

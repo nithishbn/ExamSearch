@@ -1,22 +1,31 @@
 import os
-from flask import render_template, redirect, session, request
+from flask import render_template, redirect, session, request, Flask
+from flask_bootstrap import Bootstrap
 
-from app import app
-from app.forms import SearchForm
+from app.config import Config
 from examsearch.main import search
+from forms import SearchForm
+
+app = Flask(__name__, static_folder="static", static_url_path="/static")
+
+app.config.from_object(Config)
+bootstrap = Bootstrap(app)
 
 dirname = os.path.dirname(__file__)
 
 
 @app.route('/', methods=['GET', 'POST'])
-@app.route('/index', methods=['GET', 'POST'])
+# @app.route('/index', methods=['GET', 'POST'])
 def index():
     return redirect("/portfolio")
     # return render_template('examSearch.html')
 
+
 @app.route("/portfolio")
 def portfolio():
-    return render_template("portfolio.html")
+    return render_template("portfolio/portfolio.html")
+
+
 @app.route('/examsearch', methods=['GET', 'POST'])
 def examSearch():
     form = SearchForm()
@@ -26,20 +35,22 @@ def examSearch():
         for val in res:
             print(val)
         print()
-        newRes = ["./static"+val for val in res if os.path.isfile("./app/static" + val)]
-        print(newRes)
+        newRes = [("./static/examsearch" + val[0],val[1],val[2],val[3]) for val in res if os.path.isfile("./app/static/examsearch" + val[0])]
+        print("newRes: " + str(newRes))
         session['results'] = newRes
         session['searchTerm'] = form.search.data.lower()
         return redirect("/results")
-    return render_template('examSearch.html', title='Home', form=form)
+    return render_template('examsearch/examSearch.html', title='Home', form=form)
 
 
 @app.route('/results', methods=['GET', 'POST'])
 def getResults():
     query = session['results']
     # info = [ for val in query]
-    query = [("./static" + val[0], val[1], val[2], val[3]) for val in query if os.path.isfile("./app/static" + val[0])]
-    print()
+    for val in query:
+        print("test:" + val[0])
+    query = [val[0] for val in query]
+    print("query: " + str(query))
 
     searchTerm = session['searchTerm']
     newForm = SearchForm(request.form)
@@ -49,16 +60,13 @@ def getResults():
         for val in res:
             print(val)
         print()
-        newRes = ["./static" + val for val in res if os.path.isfile("./app/static" + val)]
+        newRes = ["./static/examsearch" + val for val in res if os.path.isfile("./app/static/examsearch" + val)]
         print(newRes)
         session['results'] = newRes
         session['searchTerm'] = newForm.search.data.lower()
         return redirect("/results")
-    return render_template('results.html', query=query, searchTerm=searchTerm, form=newForm)
-
-
-
+    return render_template('examsearch/results.html', query=query, searchTerm=searchTerm, form=newForm)
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", debug=True)
+    app.run(host="localhost", debug=True)

@@ -3,7 +3,7 @@
 
 *.pdf
 
-app/static/img/
+app/static/portfolio/img/
 
 app/__pycache__/
 
