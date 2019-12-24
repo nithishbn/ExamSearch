@@ -1,14 +1,7 @@
+# Created by .ignore support plugin (hsz.mobi)
 
-\.idea/
+data/
 
-*.pdf
+.idea/
 
-app/static/portfolio/img/
-
-app/__pycache__/
-
-__pycache__/
-
-
-
-app/static/examsearch/
+venv/
