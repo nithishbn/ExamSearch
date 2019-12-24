@@ -1,15 +1,9 @@
 import os
-from flask import render_template, redirect, session, request, Flask
-from flask_bootstrap import Bootstrap
+from flask import render_template, redirect, session, request
 
-from app.config import Config
-from examsearch.main import search
+from app import app
+from app.examsearch.main import search
 from forms import SearchForm
-
-app = Flask(__name__, static_folder="static", static_url_path="/static")
-
-app.config.from_object(Config)
-bootstrap = Bootstrap(app)
 
 dirname = os.path.dirname(__file__)
 
