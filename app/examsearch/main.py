@@ -430,7 +430,7 @@ def search(query):
     # multiple tags :)
     query = query.split()
     # database connection
-    conn = sqlite3.connect("app/examsearch/questions.sqlite")
+    conn = sqlite3.connect("questions.sqlite")
     cur = conn.cursor()
     results = []
     # goes through each word in the query and finds which filePath entry has that tag using cool sql
